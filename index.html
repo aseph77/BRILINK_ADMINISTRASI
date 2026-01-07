@@ -248,6 +248,27 @@
 </div>
 
     <script>
+		// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDQ3Nx8qPS7269pFckF_j8wYa13Q_ET9rI",
+  authDomain: "brilink-administrasi.firebaseapp.com",
+  projectId: "brilink-administrasi",
+  storageBucket: "brilink-administrasi.firebasestorage.app",
+  messagingSenderId: "20740318322",
+  appId: "1:20740318322:web:55185bcda68a59344d8eeb",
+  measurementId: "G-E175YJXVG5"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 	function renderReports(view = 'daily') {
     const trxs = JSON.parse(localStorage.getItem('b_trx') || '[]');
     const table = document.getElementById('report-table');
@@ -619,4 +640,5 @@ function deleteUser(username) {
 		
     </script>
 </body>
+
 </html>
