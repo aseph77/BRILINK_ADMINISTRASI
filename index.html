@@ -263,8 +263,23 @@ const firebaseConfig = {
   measurementId: "G-E175YJXVG5"
 };
 
+// Tambahkan baris ini tepat setelah inisialisasi 'db'
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+// LANGSUNG JALANKAN SYNC USER SAAT HALAMAN DIBUKA
+onValue(ref(db, 'users'), (snapshot) => {
+    const data = snapshot.val();
+    let list = data ? Object.values(data) : [];
+    
+    // Pastikan ADMIN default selalu ada jika database kosong
+    if (list.length === 0) {
+        list = [{username: "ADMIN", pin: "0000", role: "admin"}];
+    }
+    
+    localStorage.setItem('b_users', JSON.stringify(list));
+    console.log("Data User Sinkron:", list); // Cek di F12 jika ragu
+});
 
 // --- 2. UTILITIES & FORMATTING ---
 const un = (s) => s ? parseInt(s.toString().replace(/\./g, '')) || 0 : 0;
@@ -319,17 +334,35 @@ window.showTab = function(id, btn) {
 };
 
 window.checkLogin = function() {
-    const users = JSON.parse(localStorage.getItem('b_users') || '[]');
-    const u = document.getElementById('user-input').value.toUpperCase();
-    const p = document.getElementById('pin-input').value;
-    const f = users.find(x => x.username === u && x.pin === p);
-    
-    if (f) { 
-        sessionStorage.setItem('isLoggedIn', 'true'); 
-        sessionStorage.setItem('activeUser', f.username); 
-        sessionStorage.setItem('activeRole', f.role); 
-        location.reload(); 
-    } else alert("PIN SALAH!");
+    const uInput = document.getElementById('user-input').value.trim().toUpperCase();
+    const pInput = document.getElementById('pin-input').value;
+
+    // Ambil data dari localStorage (yang sudah disinkronkan oleh onValue Firebase)
+    const users = JSON.parse(localStorage.getItem('b_users') || '[{"username":"ADMIN","pin":"0000","role":"admin"}]');
+
+    // Cari user
+    const user = users.find(x => x.username === uInput && x.pin === pInput);
+
+    if (user) {
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('activeUser', user.username);
+        sessionStorage.setItem('activeRole', user.role);
+        
+        // Langsung jalankan fungsi masuk tanpa reload agar lebih cepat
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('current-user-display').innerText = user.username;
+        
+        if (user.role === 'admin') {
+            document.getElementById('admin-section').classList.remove('hidden');
+        }
+        
+        // Jalankan sinkronisasi data setelah login
+        updateInterface();
+        location.reload(); // Reload satu kali untuk memastikan semua state bersih
+    } else {
+        alert("LOGIN GAGAL!\nUsername atau PIN salah.");
+    }
 };
 
 window.saveTransaksi = function() {
@@ -492,4 +525,5 @@ window.logout = function() {
 </body>
 
 </html>
+
 
