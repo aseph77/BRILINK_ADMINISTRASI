@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Master v24.0 - Offline Sync Enabled</title>
+    <title>Audit Master v24.0 - Full Hybrid Firebase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -11,11 +11,29 @@
         .locked { opacity: 0.4; cursor: not-allowed !important; pointer-events: none; filter: grayscale(1); }
         .input-locked { background-color: #f3f4f6; color: #9ca3af; pointer-events: none; border-color: #e5e7eb; }
         #login-screen { background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); }
-        .status-pending { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; }
-        .status-synced { background: #dcfce7; color: #15803d; border: 1px solid #4ade80; }
+        .status-pending { border-left: 4px solid #ef4444; background-color: #fef2f2; }
+        .status-synced { border-left: 4px solid #22c55e; background-color: #f0fdf4; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-[13px] font-sans">
+
+    <div id="debt-modal" class="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div class="bg-red-600 p-4 text-white text-center">
+                <h3 class="font-black uppercase italic">Pelunasan Hutang</h3>
+                <p id="debt-modal-name" class="text-[10px] opacity-80 uppercase mt-1"></p>
+            </div>
+            <div class="p-6 space-y-4 text-center">
+                <p class="text-[10px] font-bold text-gray-400 uppercase">Total Tagihan</p>
+                <p id="debt-modal-amount" class="text-3xl font-black text-red-600 italic"></p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="prosesBayarHutang('cash')" class="bg-blue-600 text-white p-4 rounded-2xl font-black uppercase text-[10px]">💰 Tunai</button>
+                    <button onclick="prosesBayarHutang('bri')" class="bg-orange-500 text-white p-4 rounded-2xl font-black uppercase text-[10px]">💳 Saldo</button>
+                </div>
+                <button onclick="closeDebtModal()" class="w-full text-gray-400 font-bold uppercase text-[10px] pt-2 border-t">Batal</button>
+            </div>
+        </div>
+    </div>
 
     <div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center p-6">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center border-t-8 border-yellow-400">
@@ -35,12 +53,12 @@
                     <h1 class="font-black text-base text-yellow-400 italic leading-none uppercase tracking-tighter">BRILINK MASTER</h1>
                     <p class="text-[8px] font-mono opacity-70 mt-1 uppercase">
                         <span id="current-user-display" class="bg-yellow-400 text-blue-900 px-1 rounded font-bold mr-1"></span> 
-                        <span id="sync-status" class="text-white">● Terhubung</span>
+                        <span id="sync-status">● Offline Mode</span>
                     </p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="uploadOfflineData()" id="btn-sync-manual" class="bg-orange-500 text-[9px] px-3 py-1.5 rounded-lg font-black uppercase hidden">🔄 Upload Data</button>
-                    <button onclick="logout()" class="bg-red-600 text-[9px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 KELUAR</button>
+                    <button onclick="uploadOfflineData()" id="btn-sync-manual" class="bg-orange-500 text-[9px] px-3 py-1.5 rounded-lg font-black uppercase hidden">🔄 Upload</button>
+                    <button onclick="logout()" class="bg-red-600 text-[9px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 Out</button>
                 </div>
             </div>
             
@@ -48,8 +66,11 @@
                 <div class="bg-blue-900/50 p-1 rounded border border-blue-800">Laci: <span id="mon-cash" class="block font-mono text-yellow-400 text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded border border-blue-800">BRI: <span id="mon-bri" class="block font-mono text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded border border-blue-800">DANA: <span id="mon-dana" class="block font-mono text-[10px]">0</span></div>
-                <div class="bg-red-900/50 p-1 rounded border border-red-800">Hutang: <span id="mon-total-debt" class="block font-mono text-red-300 text-[10px]">0</span></div>
-                <div class="bg-emerald-700 p-1 rounded border border-emerald-500 text-white col-span-2">Laba Sesi: <span id="mon-total-laba" class="block font-mono text-[10px]">0</span></div>
+                <div class="bg-blue-900/50 p-1 rounded border border-blue-800">Digipos: <span id="mon-digipos" class="block font-mono text-[10px]">0</span></div>
+                <div class="bg-blue-900/50 p-1 rounded border border-blue-800">Lain: <span id="mon-other" class="block font-mono text-[10px]">0</span></div>
+                <div class="bg-red-900/50 p-1 rounded border border-red-800">Utang: <span id="mon-total-debt" class="block font-mono text-red-300 text-[10px]">0</span></div>
+                <div class="bg-emerald-700 p-1 rounded border border-emerald-500">Laba: <span id="mon-total-laba" class="block font-mono text-[10px]">0</span></div>
+                <div class="bg-indigo-600 p-1 rounded border border-indigo-400">Modal: <span id="mon-total-modal" class="block font-mono text-[10px]">0</span></div>
             </div>
         </nav>
 
@@ -58,12 +79,18 @@
                 <div class="bg-white rounded-xl shadow border p-1.5 space-y-1">
                     <button onclick="showTab('tab-rekonsiliasi', this)" class="tab-btn w-full text-left p-2.5 rounded-lg active-tab font-black uppercase text-[10px]">🏠 Saldo Awal</button>
                     <button id="nav-trx" onclick="showTab('tab-transaksi', this)" class="tab-btn locked w-full text-left p-2.5 rounded-lg font-black uppercase text-[10px]">💸 Transaksi</button>
+                    <button id="nav-modal" onclick="showTab('tab-modal', this)" class="tab-btn locked w-full text-left p-2.5 rounded-lg font-black uppercase text-[10px]">📥 Suntik / Biaya</button>
+                    <button id="nav-debt" onclick="showTab('tab-hutang', this)" class="tab-btn locked w-full text-left p-2.5 rounded-lg font-black uppercase text-[10px] text-red-600">📔 Daftar Utang</button>
                     <button id="nav-history" onclick="showTab('tab-riwayat', this)" class="tab-btn locked w-full text-left p-2.5 rounded-lg font-black uppercase text-[10px]">🕒 Riwayat & Sync</button>
+                    <div id="admin-section" class="hidden border-t mt-2 pt-2 space-y-1">
+                        <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-2.5 rounded-lg text-green-600 font-black uppercase text-[10px]">📊 Laporan</button>
+                        <button onclick="showTab('tab-users', this)" class="tab-btn w-full text-left p-2.5 rounded-lg text-blue-600 font-black uppercase text-[10px]">👥 Akun</button>
+                    </div>
                 </div>
-                <button onclick="akhiriSesi()" class="w-full p-4 rounded-xl font-black uppercase bg-red-700 text-white shadow-lg text-[11px]">🔒 Akhiri Sesi</button>
+                <button onclick="akhiriSesi()" class="w-full p-3 rounded-xl font-black uppercase bg-red-700 text-white shadow-lg text-[10px]">🔒 Akhiri Sesi</button>
             </div>
 
-            <div class="lg:col-span-3">
+            <div class="lg:col-span-3 space-y-4">
                 <div id="tab-rekonsiliasi" class="tab-content bg-white p-5 rounded-xl border shadow-sm">
                     <h2 class="font-black text-gray-700 uppercase text-xs mb-4 text-center italic underline">Saldo Awal Sesi</h2>
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
@@ -73,30 +100,69 @@
                         <input type="text" oninput="formatCurrency(this)" id="s-digipos" class="audit-input w-full p-2 border-2 rounded-lg font-black" placeholder="DIGIPOS">
                         <input type="text" oninput="formatCurrency(this)" id="s-other" class="audit-input w-full p-2 border-2 rounded-lg font-black" placeholder="LAINNYA">
                     </div>
-                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full p-4 rounded-xl font-black uppercase bg-blue-600 text-white">Mulai Sesi</button>
-                    <div id="msg-locked" class="hidden p-4 bg-blue-50 border-2 border-blue-100 rounded-xl text-center font-bold text-blue-800 text-xs italic">🔐 SESI AKTIF - DATA TERKUNCI</div>
+                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full p-4 rounded-xl font-black uppercase bg-blue-600 text-white shadow-lg">Buka Sesi Baru</button>
+                    <div id="msg-locked" class="hidden p-4 bg-blue-50 border-2 border-blue-100 rounded-xl text-center font-bold text-blue-800 text-xs italic">🔐 SESI SEDANG BERJALAN</div>
                 </div>
 
                 <div id="tab-transaksi" class="tab-content hidden bg-white p-6 rounded-xl border shadow-sm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-4">
-                            <input type="text" id="trx-name" class="w-full p-3 border-2 rounded-xl font-bold uppercase" placeholder="PELANGGAN">
+                            <input type="text" id="trx-name" class="w-full p-3 border-2 rounded-xl font-bold uppercase" placeholder="NAMA PELANGGAN">
                             <select id="trx-type" class="w-full p-3 border-2 rounded-xl font-black"><option value="Transfer">Transfer</option><option value="Tarik Tunai">Tarik Tunai</option><option value="Pulsa/Kuota">Pulsa/Kuota</option></select>
+                            <select id="trx-sumber" class="w-full p-3 border-2 rounded-xl font-black"><option value="bri">BRI</option><option value="dana">DANA</option><option value="digipos">DIGIPOS</option><option value="other">LAINNYA</option></select>
                         </div>
                         <div class="space-y-4">
-                            <input type="text" oninput="formatCurrency(this)" id="trx-nominal" class="w-full p-3 border-2 border-blue-100 rounded-xl text-xl font-black" placeholder="NOMINAL">
-                            <input type="text" oninput="formatCurrency(this)" id="trx-admin-u" class="w-full p-3 border-2 rounded-xl font-bold" placeholder="ADMIN">
-                            <button onclick="simpanTransaksiLokal()" class="w-full bg-blue-700 text-white font-black py-4 rounded-2xl uppercase">Simpan</button>
+                            <input type="text" oninput="formatCurrency(this)" id="trx-nominal" class="w-full p-3 border-2 border-blue-100 rounded-xl text-xl font-black text-blue-900" placeholder="NOMINAL">
+                            <input type="text" oninput="formatCurrency(this)" id="trx-admin-u" class="w-full p-3 border-2 rounded-xl font-bold text-green-600" placeholder="ADMIN USER">
+                            <div class="flex gap-2">
+                                <button onclick="simpanTransaksi(false)" class="flex-1 bg-blue-700 text-white font-black py-4 rounded-2xl uppercase shadow-lg">Lunas</button>
+                                <button onclick="simpanTransaksi(true)" class="flex-1 bg-red-600 text-white font-black py-4 rounded-2xl uppercase shadow-lg">Hutang</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="tab-riwayat" class="tab-content hidden space-y-2">
-                    <div class="flex justify-between items-center mb-2 px-1">
-                        <h3 class="font-black uppercase text-[10px] text-gray-500">Log Transaksi & Status Sinkron</h3>
-                        <span id="pending-count" class="bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">0 Pending</span>
+                <div id="tab-modal" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-xl border-t-4 border-green-500 shadow">
+                        <h3 class="font-black mb-3 uppercase">📥 Tambah Saldo</h3>
+                        <select id="suntik-target" class="w-full p-2 border mb-2 rounded font-bold"><option value="bri">BRI</option><option value="dana">DANA</option></select>
+                        <input type="text" oninput="formatCurrency(this)" id="suntik-nom" class="w-full p-2 border mb-3 rounded font-black" placeholder="Nominal">
+                        <button onclick="prosesModal('tambah')" class="w-full bg-green-600 text-white p-3 rounded-xl font-black">SUNTIK SALDO</button>
                     </div>
+                    <div class="bg-white p-5 rounded-xl border-t-4 border-red-500 shadow">
+                        <h3 class="font-black mb-3 uppercase">📤 Biaya Operasional</h3>
+                        <input type="text" id="biaya-ket" class="w-full p-2 border mb-2 rounded font-bold" placeholder="Keterangan">
+                        <input type="text" oninput="formatCurrency(this)" id="biaya-nom" class="w-full p-2 border mb-3 rounded font-black" placeholder="Nominal">
+                        <button onclick="prosesModal('kurang')" class="w-full bg-red-600 text-white p-3 rounded-xl font-black">CATAT BIAYA</button>
+                    </div>
+                </div>
+
+                <div id="tab-hutang" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+                <div id="tab-riwayat" class="tab-content hidden space-y-2">
                     <div id="history-list" class="space-y-2"></div>
+                </div>
+
+                <div id="tab-laporan" class="tab-content hidden space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow flex justify-between items-center">
+                        <h3 class="font-black uppercase">Statistik Laba</h3>
+                        <button onclick="downloadExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-black text-[10px]">EXPORT EXCEL</button>
+                    </div>
+                    <div id="report-container" class="space-y-2"></div>
+                </div>
+
+                <div id="tab-users" class="tab-content hidden space-y-4">
+                    <div class="bg-white p-5 rounded-xl border shadow-sm flex gap-2">
+                        <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold flex-1" placeholder="NAMA USER">
+                        <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl w-24 text-center" placeholder="PIN">
+                        <button onclick="addUser()" class="bg-blue-600 text-white px-6 rounded-xl font-black">SIMPAN</button>
+                    </div>
+                    <div class="bg-white rounded-xl border overflow-hidden">
+                        <table class="w-full text-left text-[11px] uppercase italic">
+                            <thead class="bg-gray-50 border-b"><tr><th class="p-3">User</th><th class="p-3 text-right">Aksi</th></tr></thead>
+                            <tbody id="user-list-box" class="divide-y font-bold"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,9 +170,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // CONFIG ANDA
         const firebaseConfig = {
             apiKey: "AIzaSyDQ3Nx8qPS7269pFckF_j8wYa13Q_ET9rI",
             authDomain: "brilink-administrasi.firebaseapp.com",
@@ -119,66 +184,25 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         const un = (s) => s ? parseInt(s.toString().replace(/\./g, '')) || 0 : 0;
         const fmt = (v) => new Intl.NumberFormat('id-ID').format(v || 0);
 
         window.formatCurrency = (i) => { let v = i.value.replace(/[^0-9]/g, ""); i.value = v ? fmt(v) : ""; };
 
-        // --- OFFLINE & SYNC LOGIC ---
-
-        // 1. Simpan Transaksi ke LocalStorage dulu (Mode Offline Aman)
-        window.simpanTransaksiLokal = () => {
-            const nom = un(document.getElementById('trx-nominal').value);
-            if(nom <= 0) return alert("Nominal Kosong!");
-
-            const trx = {
-                id: Date.now(),
-                isoDate: new Date().toISOString(),
-                type: document.getElementById('trx-type').value,
-                name: document.getElementById('trx-name').value.toUpperCase() || "UMUM",
-                nominal: nom,
-                laba: un(document.getElementById('trx-admin-u').value),
-                user: sessionStorage.getItem('activeUser'),
-                isSynced: false // TANDA BELUM UPLOAD
-            };
-
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            list.push(trx);
-            localStorage.setItem('b_trx_local', JSON.stringify(list));
-
-            // Update Saldo Laci/Bank secara lokal
-            updateSaldoLokal(trx);
-            
-            // Coba upload langsung (jika ada sinyal)
-            uploadOfflineData();
-            
-            alert("Transaksi Tersimpan Secara Lokal!");
-            document.getElementById('trx-nominal').value = "";
-            document.getElementById('trx-admin-u').value = "";
-            renderRiwayat();
-        };
-
-        // 2. Fungsi Upload Data yang Tertunda
+        // --- OFFLINE SYNC LOGIC ---
         window.uploadOfflineData = async () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
             const pending = list.filter(t => !t.isSynced);
-            
-            if(pending.length === 0) {
-                document.getElementById('btn-sync-manual').classList.add('hidden');
-                return;
-            }
+            if(pending.length === 0) return document.getElementById('btn-sync-manual').classList.add('hidden');
 
-            document.getElementById('sync-status').innerText = "🔄 Mengunggah...";
-            
+            document.getElementById('sync-status').innerText = "🔄 Menghubungkan...";
             try {
                 for (let t of pending) {
                     await push(ref(db, 'transactions'), { ...t, isSynced: true });
-                    // Tandai sudah sinkron di lokal
                     t.isSynced = true;
                 }
                 localStorage.setItem('b_trx_local', JSON.stringify(list));
-                document.getElementById('sync-status').innerText = "● Sinkron";
+                document.getElementById('sync-status').innerText = "● Terhubung";
                 document.getElementById('btn-sync-manual').classList.add('hidden');
                 renderRiwayat();
             } catch (e) {
@@ -187,62 +211,123 @@
             }
         };
 
-        // 3. Validasi Akhiri Sesi
-        window.akhiriSesi = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            const pending = list.filter(t => !t.isSynced);
+        window.simpanTransaksi = (isHutang) => {
+            const nom = un(document.getElementById('trx-nominal').value);
+            const adm = un(document.getElementById('trx-admin-u').value);
+            const sk = document.getElementById('trx-sumber').value;
+            const type = document.getElementById('trx-type').value;
+            const name = document.getElementById('trx-name').value.toUpperCase() || "UMUM";
+            if(nom <= 0) return alert("Nominal 0!");
 
-            if(pending.length > 0) {
-                alert(`GAGAL TUTUP SESI!\nAda ${pending.length} data yang belum terupload ke Firebase.\nCari sinyal dan klik tombol 'UPLOAD DATA' di pojok kanan atas.`);
-                showTab('tab-riwayat');
+            const trx = {
+                id: Date.now(),
+                isoDate: new Date().toISOString().split('T')[0],
+                type: type,
+                name: name,
+                nominal: nom,
+                laba: adm,
+                user: sessionStorage.getItem('activeUser'),
+                isSynced: false
+            };
+
+            // Update Saldo Audit Lokal
+            let audit = JSON.parse(localStorage.getItem('b_audit'));
+            if(type === "Tarik Tunai") {
+                audit[sk] += nom; audit.cash -= nom;
             } else {
-                if(confirm("Semua data sudah sinkron. Yakin ingin mengakhiri sesi?")) {
-                    localStorage.removeItem('b_audit');
-                    localStorage.removeItem('b_trx_local');
-                    location.reload();
-                }
+                audit[sk] -= nom; 
+                if(!isHutang) audit.cash += (nom + adm);
+            }
+            localStorage.setItem('b_audit', JSON.stringify(audit));
+
+            // Simpan Hutang ke Firebase jika ada
+            if(isHutang) push(ref(db, 'debts'), { id: Date.now(), name, sisa: nom + adm });
+
+            // Simpan Trx Lokal
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            list.push(trx);
+            localStorage.setItem('b_trx_local', JSON.stringify(list));
+            
+            alert("Berhasil!");
+            uploadOfflineData();
+            location.reload();
+        };
+
+        window.akhiriSesi = () => {
+            const pending = JSON.parse(localStorage.getItem('b_trx_local') || '[]').filter(t => !t.isSynced);
+            if(pending.length > 0) {
+                alert(`TOLAK! Masih ada ${pending.length} data belum diupload. Cari sinyal dulu!`);
+                showTab('tab-riwayat');
+            } else if(confirm("Tutup sesi sekarang?")) {
+                localStorage.removeItem('b_audit');
+                localStorage.removeItem('b_trx_local');
+                location.reload();
             }
         };
 
-        // --- RENDER & UI ---
+        // --- RENDERERS ---
         window.renderRiwayat = () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            const pendingCount = list.filter(t => !t.isSynced).length;
-            document.getElementById('pending-count').innerText = pendingCount + " Pending";
-
             document.getElementById('history-list').innerHTML = list.slice().reverse().map(t => `
-                <div class="p-3 rounded-xl border flex justify-between items-center ${t.isSynced ? 'bg-white' : 'status-pending'}">
+                <div class="p-3 rounded-xl border flex justify-between items-center ${t.isSynced ? 'status-synced' : 'status-pending'}">
                     <div>
-                        <span class="font-black text-blue-900">${t.type}</span> 
-                        <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${t.isSynced ? 'status-synced' : 'status-pending'}">
-                            ${t.isSynced ? 'Synced' : 'Waiting Sync'}
-                        </span>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">${t.name}</p>
+                        <b class="text-blue-900">${t.type}</b> 
+                        <span class="text-[8px] px-1 rounded font-bold ${t.isSynced ? 'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${t.isSynced ? 'SYNCED':'PENDING'}</span>
+                        <p class="text-[10px] text-gray-400 uppercase">${t.name}</p>
                     </div>
                     <div class="text-right">
                         <p class="font-black">Rp ${fmt(t.nominal)}</p>
-                        <p class="text-[9px] text-green-600 font-bold">+Laba: ${fmt(t.laba)}</p>
+                        <p class="text-[9px] text-green-600 font-bold">+${fmt(t.laba)}</p>
                     </div>
                 </div>
-            `).join('');
-            
-            updateDashboard(list);
+            `).join('') || '<p class="text-center p-10 opacity-30">BELUM ADA DATA</p>';
+            updateDashboard();
         };
 
-        function updateSaldoLokal(t) {
-            let audit = JSON.parse(localStorage.getItem('b_audit'));
-            // Logika saldo sederhana (sesuaikan dengan sumber dana di index asli)
-            audit.cash += (t.nominal + t.laba); 
-            localStorage.setItem('b_audit', JSON.stringify(audit));
-        }
+        window.renderHutang = () => {
+            onValue(ref(db, 'debts'), (s) => {
+                const data = s.val() ? Object.values(s.val()) : [];
+                document.getElementById('tab-hutang').innerHTML = data.map(x => `
+                    <div class="bg-white p-4 rounded-xl border flex justify-between items-center shadow-sm">
+                        <div><p class="font-black uppercase">${x.name}</p><p class="text-red-600 font-bold">Rp ${fmt(x.sisa)}</p></div>
+                        <button onclick="openDebtModal(${x.id}, '${x.name}', ${x.sisa})" class="bg-red-600 text-white px-5 py-2 rounded-xl font-black text-[10px]">LUNASI</button>
+                    </div>
+                `).join('') || '<p class="col-span-full text-center p-10 opacity-30">HUTANG NIHIL</p>';
+            });
+        };
 
-        function updateDashboard(list) {
-            const audit = JSON.parse(localStorage.getItem('b_audit') || '{"cash":0,"bri":0,"dana":0}');
+        function updateDashboard() {
+            const audit = JSON.parse(localStorage.getItem('b_audit') || '{"cash":0,"bri":0,"dana":0,"digipos":0,"other":0}');
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
             document.getElementById('mon-cash').innerText = fmt(audit.cash);
             document.getElementById('mon-bri').innerText = fmt(audit.bri);
+            document.getElementById('mon-dana').innerText = fmt(audit.dana);
+            document.getElementById('mon-digipos').innerText = fmt(audit.digipos);
+            document.getElementById('mon-other').innerText = fmt(audit.other);
             document.getElementById('mon-total-laba').innerText = fmt(list.reduce((a,b)=>a+b.laba, 0));
+            document.getElementById('mon-total-modal').innerText = fmt(Object.values(audit).reduce((a,b)=>a+b, 0));
         }
 
+        window.prosesModal = (mode) => {
+            let audit = JSON.parse(localStorage.getItem('b_audit'));
+            if(mode === 'tambah') {
+                const target = document.getElementById('suntik-target').value;
+                const nom = un(document.getElementById('suntik-nom').value);
+                audit[target] += nom;
+                alert("Saldo bertambah!");
+            } else {
+                const nom = un(document.getElementById('biaya-nom').value);
+                const ket = document.getElementById('biaya-ket').value.toUpperCase();
+                audit.cash -= nom;
+                const trx = { id: Date.now(), isoDate: new Date().toISOString().split('T')[0], type: "BIAYA", name: ket, nominal: nom, laba: -nom, user: sessionStorage.getItem('activeUser'), isSynced: false };
+                const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+                list.push(trx); localStorage.setItem('b_trx_local', JSON.stringify(list));
+            }
+            localStorage.setItem('b_audit', JSON.stringify(audit));
+            location.reload();
+        };
+
+        // --- BOOTSTRAP ---
         window.showTab = (id, btn) => {
             if(btn && btn.classList.contains('locked')) return;
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
@@ -250,17 +335,7 @@
             document.getElementById(id).classList.remove('hidden');
             if(btn) btn.classList.add('active-tab');
             if(id === 'tab-riwayat') renderRiwayat();
-        };
-
-        window.mulaiSesi = () => {
-            const d = { 
-                cash: un(document.getElementById('s-cash').value), 
-                bri: un(document.getElementById('s-bri').value),
-                dana: un(document.getElementById('s-dana').value),
-                digipos: 0, other: 0
-            };
-            localStorage.setItem('b_audit', JSON.stringify(d));
-            location.reload();
+            if(id === 'tab-hutang') renderHutang();
         };
 
         window.checkLogin = () => {
@@ -269,18 +344,24 @@
             if(u === "ADMIN" && p === "0000") {
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('activeUser', 'ADMIN');
+                sessionStorage.setItem('activeRole', 'admin');
                 location.reload();
-            } else alert("Akses Ditolak");
+            } else alert("AKSES DITOLAK");
         };
 
-        window.logout = () => { if(confirm("Logout?")) { sessionStorage.clear(); location.reload(); } };
+        window.logout = () => { sessionStorage.clear(); location.reload(); };
+
+        window.mulaiSesi = () => {
+            const d = { cash: un(document.getElementById('s-cash').value), bri: un(document.getElementById('s-bri').value), dana: un(document.getElementById('s-dana').value), digipos: un(document.getElementById('s-digipos').value), other: un(document.getElementById('s-other').value) };
+            localStorage.setItem('b_audit', JSON.stringify(d)); location.reload();
+        };
 
         window.onload = () => {
             if(sessionStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 document.getElementById('current-user-display').innerText = sessionStorage.getItem('activeUser');
-                
+                if(sessionStorage.getItem('activeRole') === 'admin') document.getElementById('admin-section').classList.remove('hidden');
                 if(localStorage.getItem('b_audit')) {
                     document.getElementById('btn-mulai').classList.add('hidden');
                     document.getElementById('msg-locked').classList.remove('hidden');
@@ -288,12 +369,8 @@
                     renderRiwayat();
                 }
             }
-            // Auto sync saat buka aplikasi
             uploadOfflineData();
         };
-
-        // Cek koneksi berkala
-        window.addEventListener('online', uploadOfflineData);
     </script>
 </body>
 </html>
