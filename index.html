@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Master v24.8 - Fix Admin & Debt</title>
+    <title>Audit Master v24.9 - Full Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -16,12 +16,12 @@
 
     <div id="modal-pelunasan" class="hidden modal-bg flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
-            <div class="bg-blue-900 p-4 text-white text-center">
-                <h3 class="font-black uppercase italic">Pelunasan Utang</h3>
-                <p id="target-hutang-nama" class="text-[10px] opacity-80 mt-1"></p>
-            </div>
+            <div class="bg-blue-900 p-4 text-white text-center font-black uppercase italic">Pelunasan Utang</div>
             <div class="p-6 space-y-4">
-                <div class="text-center"><p id="target-hutang-nom" class="text-3xl font-black text-red-600 italic"></p></div>
+                <div class="text-center">
+                    <p id="target-hutang-nama" class="font-bold text-gray-500 uppercase"></p>
+                    <p id="target-hutang-nom" class="text-3xl font-black text-red-600 italic"></p>
+                </div>
                 <div id="step-metode" class="grid grid-cols-2 gap-3">
                     <button onclick="prosesBayarHutang('tunai')" class="bg-blue-600 text-white p-4 rounded-2xl font-black">💰 TUNAI</button>
                     <button onclick="showStepSaldo()" class="bg-orange-500 text-white p-4 rounded-2xl font-black">💳 SALDO</button>
@@ -52,13 +52,10 @@
         <nav class="bg-blue-900 text-white sticky top-0 z-50 shadow-xl">
             <div class="container mx-auto p-2 flex justify-between items-center">
                 <div class="flex flex-col">
-                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.8</h1>
-                    <span id="sync-status" class="text-[9px] font-mono opacity-70 italic font-bold">MODE: REALTIME DB</span>
+                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.9</h1>
+                    <span class="text-[9px] font-mono opacity-70 italic font-bold">MODE: REALTIME DB</span>
                 </div>
-                <div class="flex gap-2">
-                    <button id="btn-sync" class="bg-orange-500 text-[10px] px-4 py-2 rounded-lg font-black shadow-lg uppercase">🔄 Sync</button>
-                    <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 Out</button>
-                </div>
+                <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 Out</button>
             </div>
             <div class="bg-blue-950 p-2 grid grid-cols-4 md:grid-cols-8 gap-1 text-center text-[8px] font-bold uppercase italic border-t border-blue-800">
                 <div class="bg-blue-900/50 p-1 rounded">Laci: <span id="mon-cash" class="block text-yellow-400 text-[10px]">0</span></div>
@@ -80,7 +77,7 @@
                     <button id="nav-debt" onclick="showTab('tab-hutang', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase text-red-600">📔 Daftar Utang</button>
                     <button id="nav-history" onclick="showTab('tab-riwayat', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">🕒 Riwayat</button>
                     <div id="admin-menu" class="hidden border-t mt-2 pt-2 space-y-1">
-                        <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-3 rounded-lg text-green-600 uppercase">📊 Laporan Sesi</button>
+                        <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-3 rounded-lg text-green-600 uppercase">📊 Laporan & Reset</button>
                         <button onclick="showTab('tab-users', this)" class="tab-btn w-full text-left p-3 rounded-lg text-blue-600 uppercase">👥 Kelola Akun</button>
                     </div>
                 </div>
@@ -108,7 +105,7 @@
                         </div>
                         <div class="space-y-4">
                             <div id="form-standar">
-                                <input type="text" oninput="formatCurrency(this)" id="trx-nom" class="w-full p-3 border-2 rounded-xl text-2xl font-black" placeholder="NOMINAL">
+                                <input type="text" oninput="formatCurrency(this)" id="trx-nom" class="w-full p-3 border-2 rounded-xl text-2xl font-black text-center" placeholder="NOMINAL">
                                 <div class="grid grid-cols-2 gap-2 mt-2">
                                     <input type="text" oninput="formatCurrency(this)" id="trx-adm-u" class="p-3 border-2 rounded-xl font-bold text-green-600" placeholder="ADMIN USER">
                                     <input type="text" oninput="formatCurrency(this)" id="trx-pot-b" class="p-3 border-2 rounded-xl font-bold text-red-600" placeholder="POT. BANK">
@@ -130,19 +127,24 @@
                 <div id="tab-hutang" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-3"></div>
 
                 <div id="tab-users" class="tab-content hidden space-y-4">
-                    <div class="bg-white p-5 rounded-xl border flex gap-2">
-                        <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold flex-1" placeholder="NAMA USER">
-                        <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl w-32 text-center font-black" placeholder="PIN">
-                        <button id="btn-save-user" class="bg-blue-700 text-white px-8 rounded-xl font-black">SIMPAN</button>
+                    <div class="bg-white p-5 rounded-xl border grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold" placeholder="NAMA USER">
+                        <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl text-center font-black" placeholder="PIN">
+                        <select id="new-role" class="p-3 border-2 rounded-xl font-bold">
+                            <option value="pegawai">PEGAWAI</option>
+                            <option value="admin">ADMIN</option>
+                        </select>
+                        <button id="btn-save-user" class="bg-blue-700 text-white rounded-xl font-black">SIMPAN USER</button>
                     </div>
                     <div class="bg-white rounded-xl border overflow-hidden">
-                        <table class="w-full text-left font-bold uppercase"><thead class="bg-blue-900 text-white"><tr><th class="p-4">User</th><th class="p-4 text-right">Status</th></tr></thead><tbody id="user-list-box" class="divide-y"></tbody></table>
+                        <table class="w-full text-left font-bold uppercase"><thead class="bg-blue-900 text-white"><tr><th class="p-4">User</th><th class="p-4">Role</th><th class="p-4 text-right">Aksi</th></tr></thead><tbody id="user-list-box" class="divide-y"></tbody></table>
                     </div>
                 </div>
 
                 <div id="tab-laporan" class="tab-content hidden space-y-4">
-                    <div class="bg-white p-4 rounded-xl border flex justify-between">
-                        <button onclick="exportExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-black uppercase">📊 Cetak Excel</button>
+                    <div class="bg-white p-4 rounded-xl border flex justify-between gap-2">
+                        <button onclick="exportExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-black uppercase">📊 Excel</button>
+                        <button onclick="resetAllData()" class="bg-red-600 text-white px-6 py-2 rounded-lg font-black uppercase shadow-lg">⚠️ Hapus Semua Data</button>
                     </div>
                     <div id="report-box" class="space-y-2"></div>
                 </div>
@@ -150,7 +152,7 @@
                 <div id="tab-riwayat" class="tab-content hidden space-y-2"></div>
 
                 <div id="tab-rekonsiliasi" class="tab-content bg-white p-5 rounded-xl border shadow-sm">
-                    <h2 class="font-black text-center mb-4 uppercase italic underline">Input Saldo Awal</h2>
+                    <h2 class="font-black text-center mb-4 uppercase italic">Input Saldo Awal Sesi</h2>
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                         <input type="text" oninput="formatCurrency(this)" id="s-cash" class="p-3 border-2 rounded-xl font-black text-center" placeholder="LACI">
                         <input type="text" oninput="formatCurrency(this)" id="s-bri" class="p-3 border-2 rounded-xl font-black text-center" placeholder="BRI">
@@ -189,24 +191,22 @@
         window.showStepSaldo = () => { document.getElementById('step-metode').classList.add('hidden'); document.getElementById('step-saldo').classList.remove('hidden'); };
         window.closeModalHutang = () => { document.getElementById('modal-pelunasan').classList.add('hidden'); };
 
-        // --- AUTH & ADMIN CHECK ---
+        // --- AUTH ---
         document.getElementById('btn-login-trigger').onclick = () => {
             const u = document.getElementById('user-input').value.toUpperCase();
             const p = document.getElementById('pin-input').value;
             if(u === "ADMIN" && p === "0000") {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('role', 'admin');
-                location.reload();
+                sessionStorage.setItem('isLoggedIn', 'true'); sessionStorage.setItem('role', 'admin'); location.reload();
             } else {
                 onValue(ref(db, 'users'), (s) => {
-                    let auth = false;
-                    if(s.exists()) Object.values(s.val()).forEach(v => { if(v.username === u && v.pin === p) auth = true; });
-                    if(auth) { sessionStorage.setItem('isLoggedIn', 'true'); location.reload(); } else alert("PIN SALAH!");
+                    let auth = false, role = 'pegawai';
+                    if(s.exists()) Object.values(s.val()).forEach(v => { if(v.username === u && v.pin === p) { auth = true; role = v.role; } });
+                    if(auth) { sessionStorage.setItem('isLoggedIn', 'true'); sessionStorage.setItem('role', role); location.reload(); } else alert("GAGAL!");
                 }, {onlyOnce: true});
             }
         };
 
-        // --- TRANSAKSI & UTANG ---
+        // --- CORE PROCESS ---
         window.saveTrx = (status) => {
             const name = document.getElementById('trx-name').value.toUpperCase() || "UMUM";
             const type = document.getElementById('trx-type').value;
@@ -214,9 +214,11 @@
             let nom = 0, laba = 0, admU = un(document.getElementById('trx-adm-u').value);
 
             if(type === 'Pulsa/Kuota') {
-                nom = un(document.getElementById('trx-jual').value); laba = nom - un(document.getElementById('trx-modal').value);
+                nom = un(document.getElementById('trx-jual').value); 
+                laba = nom - un(document.getElementById('trx-modal').value);
             } else {
-                nom = un(document.getElementById('trx-nom').value); laba = admU - un(document.getElementById('trx-pot-b').value);
+                nom = un(document.getElementById('trx-nom').value); 
+                laba = admU - un(document.getElementById('trx-pot-b').value);
             }
 
             if(nom <= 0) return alert("Cek Nominal!");
@@ -231,9 +233,12 @@
             }
 
             if(type === "Tarik Tunai") { audit[sk] += nom; audit.cash -= nom; }
-            else { audit[sk] -= nom; if(status === 'lunas') audit.cash += (nom + (type==='Pulsa/Kuota'?0:admU)); }
+            else { 
+                audit[sk] -= nom; 
+                if(status === 'lunas') audit.cash += (nom + (type==='Pulsa/Kuota'?0:admU)); 
+                if(type === 'Transfer') audit[sk] -= un(document.getElementById('trx-pot-b').value);
+            }
 
-            // Push ke Firebase
             push(ref(db, 'transactions'), { name, type, nominal: nom, laba, date: new Date().toLocaleString() });
             if(hVal > 0) push(ref(db, 'debts'), { name, sisa: hVal });
 
@@ -249,11 +254,11 @@
                 let h = "";
                 if(s.exists()) Object.entries(s.val()).forEach(([k, v]) => {
                     h += `<div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow flex justify-between items-center">
-                        <div><h4 class="font-black">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
-                        <button onclick="openDebtModal('${k}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">BAYAR</button>
+                        <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
+                        <button onclick="openDebtModal('${k}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
                     </div>`;
                 });
-                document.getElementById('tab-hutang').innerHTML = h || '<p class="col-span-2 text-center p-10 opacity-30">UTANG KOSONG</p>';
+                document.getElementById('tab-hutang').innerHTML = h || '<div class="col-span-2 text-center p-10 opacity-30 font-bold italic text-lg">BELUM ADA UTANG</div>';
             });
         };
 
@@ -262,26 +267,39 @@
         window.prosesBayarHutang = (sumber) => {
             const nom = un(document.getElementById('target-hutang-nom').innerText);
             let audit = JSON.parse(localStorage.getItem('b_audit'));
-            audit[sumber === 'tunai' ? 'cash' : sumber] += nom;
+            audit[sumber] += nom;
             localStorage.setItem('b_audit', JSON.stringify(audit));
             remove(ref(db, 'debts/' + selectedKey)).then(() => location.reload());
         };
 
-        // --- ADMIN FUNCTIONS ---
+        // --- ADMIN ---
         document.getElementById('btn-save-user').onclick = () => {
             const u = document.getElementById('new-u').value.toUpperCase();
             const p = document.getElementById('new-p').value;
-            if(u && p) push(ref(db, 'users'), { username: u, pin: p }).then(() => alert("Saved!"));
+            const r = document.getElementById('new-role').value;
+            if(u && p) push(ref(db, 'users'), { username: u, pin: p, role: r }).then(() => alert("User Ditambahkan!"));
         };
 
         window.renderUserList = () => {
             onValue(ref(db, 'users'), (s) => {
                 let h = "";
-                if(s.exists()) Object.values(s.val()).forEach(v => h += `<tr><td class="p-4">${v.username}</td><td class="p-4 text-right text-green-600 font-bold">AKTIF</td></tr>`);
+                if(s.exists()) Object.entries(s.val()).forEach(([k,v]) => h += `<tr><td class="p-4">${v.username}</td><td class="p-4 font-bold text-blue-600 uppercase">${v.role}</td><td class="p-4 text-right"><button onclick="deleteUser('${k}')" class="text-red-600">Hapus</button></td></tr>`);
                 document.getElementById('user-list-box').innerHTML = h;
             });
         };
 
+        window.deleteUser = (k) => { if(confirm("Hapus user?")) remove(ref(db, 'users/' + k)); };
+
+        window.resetAllData = () => {
+            if(confirm("PERINGATAN! Semua data transaksi dan utang di Cloud & HP ini akan DIHAPUS PERMANEN. Lanjutkan?")) {
+                remove(ref(db, 'transactions'));
+                remove(ref(db, 'debts'));
+                localStorage.clear();
+                location.reload();
+            }
+        };
+
+        // --- TABS & DASHBOARD ---
         window.showTab = (id, btn) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
@@ -289,14 +307,7 @@
             if(btn) btn.classList.add('active-tab');
             if(id === 'tab-hutang') renderHutang();
             if(id === 'tab-users') renderUserList();
-            if(id === 'tab-riwayat') renderRiwayat();
             if(id === 'tab-laporan') renderLaporan();
-        };
-
-        window.renderRiwayat = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `<div class="p-3 bg-white rounded-xl border flex justify-between items-center shadow-sm border-l-4 border-blue-900"><div><b>${t.type}</b><p class="uppercase text-[10px]">${t.name}</p></div><div class="font-black">Rp ${fmt(t.nominal)}</div></div>`).join('');
-            updateDashboard();
         };
 
         function updateDashboard() {
@@ -304,26 +315,50 @@
             document.getElementById('mon-cash').innerText = fmt(audit.cash);
             document.getElementById('mon-bri').innerText = fmt(audit.bri);
             document.getElementById('mon-dana').innerText = fmt(audit.dana);
+            document.getElementById('mon-digipos').innerText = fmt(audit.digipos);
+            document.getElementById('mon-other').innerText = fmt(audit.other);
             document.getElementById('mon-total-modal').innerText = fmt(Object.values(audit).reduce((a,b)=>a+b, 0));
             onValue(ref(db, 'transactions'), (s) => {
                 let t = 0; if(s.exists()) Object.values(s.val()).forEach(v => t += v.laba);
                 document.getElementById('mon-total-laba-all').innerText = fmt(t);
             });
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            document.getElementById('mon-total-laba-sesi').innerText = fmt(list.reduce((a,b)=>a+b.laba, 0));
         }
 
-        window.renderLaporan = () => {
+        window.renderRiwayat = () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            document.getElementById('report-box').innerHTML = list.map(t => `<div class="bg-white p-3 border rounded-lg flex justify-between font-bold"><span>${t.name}</span><span class="text-blue-700">Laba: Rp ${fmt(t.laba)}</span></div>`).join('');
+            document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `<div class="p-3 bg-white rounded-xl border flex justify-between items-center shadow-sm border-l-4 border-blue-900"><div><b>${t.type}</b><p class="uppercase text-[10px]">${t.name}</p></div><div class="font-black">Rp ${fmt(t.nominal)}</div></div>`).join('');
+            updateDashboard();
+        };
+
+        window.renderLaporan = () => {
+            onValue(ref(db, 'transactions'), (s) => {
+                let h = "";
+                if(s.exists()) Object.values(s.val()).forEach(t => h += `<div class="bg-white p-3 border rounded-lg flex justify-between font-bold"><span>${t.date} - ${t.name}</span><span class="text-blue-700">Rp ${fmt(t.laba)}</span></div>`);
+                document.getElementById('report-box').innerHTML = h;
+            });
         };
 
         window.mulaiSesi = () => {
-            const d = { cash: un(document.getElementById('s-cash').value), bri: un(document.getElementById('s-bri').value), dana: un(document.getElementById('s-dana').value), digipos: un(document.getElementById('s-digipos').value), other: un(document.getElementById('s-other').value) };
+            const d = { 
+                cash: un(document.getElementById('s-cash').value), 
+                bri: un(document.getElementById('s-bri').value), 
+                dana: un(document.getElementById('s-dana').value), 
+                digipos: un(document.getElementById('s-digipos').value), 
+                other: un(document.getElementById('s-other').value) 
+            };
             localStorage.setItem('b_audit', JSON.stringify(d)); location.reload();
         };
 
+        window.toggleForm = () => { 
+            const t = document.getElementById('trx-type').value; 
+            document.getElementById('form-standar').classList.toggle('hidden', t === 'Pulsa/Kuota'); 
+            document.getElementById('form-pulsa').classList.toggle('hidden', t !== 'Pulsa/Kuota'); 
+        };
+
         window.logout = () => { sessionStorage.clear(); location.reload(); };
-        window.akhiriSesi = () => { if(confirm("Hapus Sesi?")) { localStorage.clear(); location.reload(); } };
-        window.toggleForm = () => { const t = document.getElementById('trx-type').value; document.getElementById('form-standar').classList.toggle('hidden', t === 'Pulsa/Kuota'); document.getElementById('form-pulsa').classList.toggle('hidden', t !== 'Pulsa/Kuota'); };
+        window.akhiriSesi = () => { if(confirm("Tutup Sesi?")) { localStorage.clear(); location.reload(); } };
 
         window.onload = () => {
             if(sessionStorage.getItem('isLoggedIn') === 'true') {
