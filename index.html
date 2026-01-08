@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Master v24.5 - Fix Connection</title>
+    <title>Audit Master v24.6 - Realtime Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .active-tab { border-left: 4px solid #fbbf24; background-color: #1e3a8a; font-weight: bold; color: white; }
         .locked { opacity: 0.4; cursor: not-allowed !important; pointer-events: none; }
-        #login-screen { background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); }
         .status-pending { border-left: 5px solid #ef4444 !important; background-color: #fff1f2; }
         .status-synced { border-left: 5px solid #22c55e !important; background-color: #f0fdf4; }
         .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
@@ -21,33 +20,33 @@
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div class="bg-blue-900 p-4 text-white text-center">
                 <h3 class="font-black uppercase italic">Pelunasan Utang</h3>
-                <p id="target-hutang-nama" class="text-[10px] opacity-80 uppercase mt-1"></p>
+                <p id="target-hutang-nama" class="text-[10px] opacity-80 mt-1"></p>
             </div>
             <div class="p-6 space-y-4">
                 <div class="text-center">
                     <p id="target-hutang-nom" class="text-3xl font-black text-red-600 italic"></p>
                 </div>
                 <div id="step-metode" class="grid grid-cols-2 gap-3">
-                    <button onclick="prosesBayarHutang('tunai')" class="bg-blue-600 text-white p-4 rounded-2xl font-black uppercase shadow-lg">💰 Tunai</button>
-                    <button onclick="showStepSaldo()" class="bg-orange-500 text-white p-4 rounded-2xl font-black uppercase shadow-lg">💳 Saldo</button>
+                    <button onclick="prosesBayarHutang('tunai')" class="bg-blue-600 text-white p-4 rounded-2xl font-black uppercase">💰 Tunai</button>
+                    <button onclick="showStepSaldo()" class="bg-orange-500 text-white p-4 rounded-2xl font-black uppercase">💳 Saldo</button>
                 </div>
-                <div id="step-saldo" class="hidden grid grid-cols-2 gap-2 animate-fadeIn">
-                    <button onclick="prosesBayarHutang('bri')" class="bg-gray-100 p-3 rounded-xl font-bold border-2 border-blue-200">BRI</button>
-                    <button onclick="prosesBayarHutang('dana')" class="bg-gray-100 p-3 rounded-xl font-bold border-2 border-blue-200">DANA</button>
-                    <button onclick="prosesBayarHutang('digipos')" class="bg-gray-100 p-3 rounded-xl font-bold border-2 border-blue-200">DIGIPOS</button>
-                    <button onclick="prosesBayarHutang('other')" class="bg-gray-100 p-3 rounded-xl font-bold border-2 border-blue-200">LAINNYA</button>
+                <div id="step-saldo" class="hidden grid grid-cols-2 gap-2">
+                    <button onclick="prosesBayarHutang('bri')" class="bg-gray-100 p-3 rounded-xl font-bold border-2">BRI</button>
+                    <button onclick="prosesBayarHutang('dana')" class="bg-gray-100 p-3 rounded-xl font-bold border-2">DANA</button>
+                    <button onclick="prosesBayarHutang('digipos')" class="bg-gray-100 p-3 rounded-xl font-bold border-2">DIGIPOS</button>
+                    <button onclick="prosesBayarHutang('other')" class="bg-gray-100 p-3 rounded-xl font-bold border-2">LAIN</button>
                 </div>
-                <button onclick="closeModalHutang()" class="w-full text-gray-400 font-bold uppercase text-[10px] pt-2 border-t">Batal</button>
+                <button onclick="closeModalHutang()" class="w-full text-gray-400 font-bold uppercase pt-2 border-t">Batal</button>
             </div>
         </div>
     </div>
 
-    <div id="login-screen" class="fixed inset-0 z-[500] flex items-center justify-center p-6">
+    <div id="login-screen" class="fixed inset-0 z-[500] flex items-center justify-center bg-blue-900 p-6">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center border-t-8 border-yellow-400">
-            <h2 class="text-2xl font-black text-blue-900 italic mb-6 uppercase">Audit Master Login</h2>
+            <h2 class="text-2xl font-black text-blue-900 mb-6 uppercase">Audit Master Login</h2>
             <div class="space-y-4">
                 <input type="text" id="user-input" class="w-full p-3 border-2 rounded-xl font-bold uppercase text-center" placeholder="USERNAME">
-                <input type="password" id="pin-input" maxlength="4" class="w-full text-center text-2xl p-3 border-2 rounded-xl font-black text-blue-900" placeholder="PIN">
+                <input type="password" id="pin-input" maxlength="4" class="w-full text-center text-2xl p-3 border-2 rounded-xl font-black" placeholder="PIN">
                 <button onclick="checkLogin()" class="w-full bg-blue-700 text-white font-black py-4 rounded-2xl uppercase">Masuk</button>
             </div>
         </div>
@@ -57,12 +56,12 @@
         <nav class="bg-blue-900 text-white sticky top-0 z-50 shadow-xl">
             <div class="container mx-auto p-2 flex justify-between items-center">
                 <div class="flex flex-col">
-                    <h1 class="font-black text-yellow-400 italic text-lg uppercase leading-none">Audit Master v24.5</h1>
-                    <span id="sync-status" class="text-[9px] font-mono opacity-70">SINKRONISASI: MANUAL</span>
+                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.6</h1>
+                    <span id="sync-status" class="text-[9px] font-mono opacity-70 italic">STATUS: MANUAL SYNC</span>
                 </div>
                 <div class="flex gap-2">
-                    <button id="btn-sync-manual" onclick="uploadOfflineData()" class="bg-orange-500 text-[10px] px-4 py-2 rounded-lg font-black shadow-lg">🔄 UPLOAD DATA</button>
-                    <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 Out</button>
+                    <button id="btn-sync-manual" onclick="uploadOfflineData()" class="bg-orange-500 text-[10px] px-4 py-2 rounded-lg font-black">🔄 UPLOAD DATA</button>
+                    <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 OUT</button>
                 </div>
             </div>
             
@@ -85,7 +84,7 @@
                     <button id="nav-trx" onclick="showTab('tab-transaksi', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">💸 Transaksi Baru</button>
                     <button id="nav-debt" onclick="showTab('tab-hutang', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase text-red-600">📔 Daftar Utang</button>
                     <button id="nav-history" onclick="showTab('tab-riwayat', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">🕒 Riwayat & Sync</button>
-                    <div id="admin-section" class="border-t mt-2 pt-2 space-y-1">
+                    <div id="admin-section" class="hidden border-t mt-2 pt-2 space-y-1">
                         <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-3 rounded-lg text-green-600 uppercase">📊 Laporan Bertingkat</button>
                         <button onclick="showTab('tab-users', this)" class="tab-btn w-full text-left p-3 rounded-lg text-blue-600 uppercase">👥 Kelola Akun</button>
                     </div>
@@ -141,22 +140,24 @@
                     <div id="list-hutang-box" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 </div>
 
+                <div id="tab-riwayat" class="tab-content hidden space-y-2"></div>
+
                 <div id="tab-laporan" class="tab-content hidden space-y-4">
                     <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
                         <div class="flex gap-2">
                             <button onclick="filterLaporan('harian')" class="bg-blue-900 text-white px-4 py-2 rounded-lg font-bold">HARIAN</button>
                             <button onclick="filterLaporan('bulanan')" class="bg-gray-200 px-4 py-2 rounded-lg font-bold">BULANAN</button>
                         </div>
-                        <button onclick="exportLaporanExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-black uppercase">📊 EXCEL (.XLSX)</button>
+                        <button onclick="exportLaporanExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-black uppercase italic">📊 EXCEL</button>
                     </div>
-                    <div id="report-list" class="space-y-2 font-bold"></div>
+                    <div id="report-list" class="space-y-2"></div>
                 </div>
 
                 <div id="tab-users" class="tab-content hidden space-y-4">
                     <div class="bg-white p-5 rounded-xl border flex gap-2">
                         <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold flex-1" placeholder="USERNAME">
                         <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl w-24 text-center font-black" placeholder="PIN">
-                        <button onclick="addUser()" class="bg-blue-700 text-white px-6 rounded-xl font-black">TAMBAH</button>
+                        <button onclick="addUser()" class="bg-blue-700 text-white px-6 rounded-xl font-black">SAVE</button>
                     </div>
                     <div class="bg-white rounded-xl border overflow-hidden">
                         <table class="w-full text-left font-bold uppercase">
@@ -166,10 +167,8 @@
                     </div>
                 </div>
 
-                <div id="tab-riwayat" class="tab-content hidden space-y-2"></div>
-
                 <div id="tab-rekonsiliasi" class="tab-content bg-white p-5 rounded-xl border shadow-sm">
-                    <h2 class="font-black text-center mb-4 text-gray-700 uppercase underline italic">Saldo Awal Sesi</h2>
+                    <h2 class="font-black text-center mb-4 text-gray-700 uppercase italic">Input Saldo Awal Sesi</h2>
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                         <input type="text" oninput="formatCurrency(this)" id="s-cash" class="p-3 border-2 rounded-xl font-black" placeholder="LACI">
                         <input type="text" oninput="formatCurrency(this)" id="s-bri" class="p-3 border-2 rounded-xl font-black" placeholder="BRI">
@@ -177,7 +176,7 @@
                         <input type="text" oninput="formatCurrency(this)" id="s-digipos" class="p-3 border-2 rounded-xl font-black" placeholder="DIGIPOS">
                         <input type="text" oninput="formatCurrency(this)" id="s-other" class="p-3 border-2 rounded-xl font-black" placeholder="LAIN">
                     </div>
-                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full mt-4 bg-blue-700 text-white p-4 rounded-xl font-black uppercase">BUKA SESI</button>
+                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full mt-4 bg-blue-700 text-white p-4 rounded-xl font-black uppercase italic">Buka Sesi Transaksi</button>
                     <div id="msg-locked" class="hidden p-4 bg-green-50 text-green-700 text-center font-black mt-4 rounded-xl">🔐 SESI SEDANG BERJALAN</div>
                 </div>
             </div>
@@ -202,45 +201,41 @@
         const db = getDatabase(app);
         const un = (s) => s ? parseInt(s.toString().replace(/\./g, '')) || 0 : 0;
         const fmt = (v) => new Intl.NumberFormat('id-ID').format(v || 0);
-        let selectedDebtId = null;
+        let currentDebtKey = null;
 
-        // --- GLOBAL FUNCTIONS EXPOSURE ---
         window.formatCurrency = (i) => { let v = i.value.replace(/[^0-9]/g, ""); i.value = v ? fmt(v) : ""; };
         window.showStepSaldo = () => { document.getElementById('step-metode').classList.add('hidden'); document.getElementById('step-saldo').classList.remove('hidden'); };
         window.closeModalHutang = () => { document.getElementById('modal-pelunasan').classList.add('hidden'); };
 
-        window.uploadOfflineData = async () => {
+        // --- REALTIME UPLOAD TANPA LOADING ---
+        window.uploadOfflineData = () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            const pending = list.filter(t => !t.isSynced);
-            if(pending.length === 0) return alert("Semua data sudah terupload!");
+            const debts = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
             
-            document.getElementById('btn-sync-manual').innerText = "🔄 LOADING...";
-            try {
-                for (let i = 0; i < list.length; i++) {
-                    if(!list[i].isSynced) {
-                        await set(push(ref(db, 'transactions')), { ...list[i], isSynced: true });
-                        list[i].isSynced = true;
-                    }
+            // Upload Transaksi
+            list.forEach((t, index) => {
+                if(!t.isSynced) {
+                    push(ref(db, 'transactions'), { ...t, isSynced: true })
+                        .then(() => {
+                            list[index].isSynced = true;
+                            localStorage.setItem('b_trx_local', JSON.stringify(list));
+                            renderRiwayat();
+                        });
                 }
-                localStorage.setItem('b_trx_local', JSON.stringify(list));
-                alert("Berhasil Sinkron ke Server!");
-                location.reload();
-            } catch (e) {
-                alert("Gagal koneksi server!");
-                document.getElementById('btn-sync-manual').innerText = "🔄 UPLOAD DATA";
-            }
-        };
-
-        window.prosesBayarHutang = (sumber) => {
-            const audit = JSON.parse(localStorage.getItem('b_audit'));
-            const nominal = un(document.getElementById('target-hutang-nom').innerText);
-            if(sumber === 'tunai') audit.cash += nominal;
-            else audit[sumber] += nominal;
-            localStorage.setItem('b_audit', JSON.stringify(audit));
-            remove(ref(db, 'debts/' + selectedDebtId)).then(() => {
-                alert("Hutang Lunas via " + sumber.toUpperCase());
-                location.reload();
             });
+
+            // Upload Utang
+            debts.forEach((d, index) => {
+                if(!d.isSynced) {
+                    push(ref(db, 'debts'), { ...d, isSynced: true })
+                        .then(() => {
+                            debts[index].isSynced = true;
+                            localStorage.setItem('b_debts_local', JSON.stringify(debts));
+                        });
+                }
+            });
+
+            alert("Proses Sinkronisasi Berjalan di Background...");
         };
 
         window.simpanTransaksi = (status) => {
@@ -260,15 +255,16 @@
 
             if(nom <= 0) return alert("Nominal Kosong!");
             let audit = JSON.parse(localStorage.getItem('b_audit'));
-            let hutangVal = 0;
+            let hVal = 0;
 
-            if(status === 'hutang') hutangVal = nom + (type==='Pulsa/Kuota' ? 0 : admU);
+            if(status === 'hutang') hVal = nom + (type==='Pulsa/Kuota' ? 0 : admU);
             else if(status === 'sebagian') {
                 const bayar = un(prompt("Bayar Tunai Sekarang:"));
-                hutangVal = (nom + (type==='Pulsa/Kuota' ? 0 : admU)) - bayar;
+                hVal = (nom + (type==='Pulsa/Kuota' ? 0 : admU)) - bayar;
                 audit.cash += bayar;
             }
 
+            // Hitung Saldo
             if(type === "Tarik Tunai") { audit[sk] += nom; audit.cash -= nom; }
             else {
                 audit[sk] -= nom;
@@ -279,7 +275,12 @@
                 if(type === 'Transfer') audit[sk] -= un(document.getElementById('trx-pot-bank').value);
             }
 
-            if(hutangVal > 0) push(ref(db, 'debts'), { id: Date.now(), name, sisa: hutangVal });
+            // Simpan Utang Lokal & Siapkan ke Cloud
+            if(hVal > 0) {
+                const dList = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
+                dList.push({ id: Date.now(), name, sisa: hVal, isSynced: false });
+                localStorage.setItem('b_debts_local', JSON.stringify(dList));
+            }
 
             const trx = { id: Date.now(), isoDate: new Date().toISOString().split('T')[0], type, name, nominal: nom, laba, isSynced: false };
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
@@ -290,50 +291,49 @@
         };
 
         window.renderHutang = () => {
-            onValue(ref(db, 'debts'), (s) => {
-                let html = "";
-                if(s.val()) Object.entries(s.val()).forEach(([k, v]) => {
-                    html += `<div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow-sm flex justify-between items-center">
-                        <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
-                        <button onclick="openModalDebt('${k}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
-                    </div>`;
-                });
-                document.getElementById('list-hutang-box').innerHTML = html || '<p class="text-center w-full opacity-30 font-bold p-10">KOSONG</p>';
+            const local = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
+            let html = "";
+            local.forEach((v, idx) => {
+                html += `
+                <div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow-sm flex justify-between items-center">
+                    <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
+                    <button onclick="openDebtModal('${idx}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
+                </div>`;
             });
-        };
-        window.openModalDebt = (id, n, s) => { selectedDebtId = id; document.getElementById('target-hutang-nama').innerText = n; document.getElementById('target-hutang-nom').innerText = fmt(s); document.getElementById('modal-pelunasan').classList.remove('hidden'); };
-
-        window.filterLaporan = (mode) => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            let grouped = {};
-            list.forEach(t => { let k = mode === 'harian' ? t.isoDate : t.isoDate.substring(0, 7); grouped[k] = (grouped[k] || 0) + t.laba; });
-            document.getElementById('report-list').innerHTML = Object.entries(grouped).map(([k, v]) => `<div class="bg-white p-4 rounded-xl border flex justify-between"><span>${k}</span><span class="text-blue-700">Rp ${fmt(v)}</span></div>`).join('');
+            document.getElementById('list-hutang-box').innerHTML = html || '<p class="text-center w-full opacity-30 font-bold p-10">KOSONG</p>';
         };
 
-        window.exportLaporanExcel = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            const ws = XLSX.utils.json_to_sheet(list);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit");
-            XLSX.writeFile(wb, "Laporan_Audit_Manual.xlsx");
+        window.openDebtModal = (idx, n, s) => {
+            currentDebtKey = idx;
+            document.getElementById('target-hutang-nama').innerText = n;
+            document.getElementById('target-hutang-nom').innerText = fmt(s);
+            document.getElementById('modal-pelunasan').classList.remove('hidden');
         };
 
-        window.addUser = () => { const u = document.getElementById('new-u').value.toUpperCase(); const p = document.getElementById('new-p').value; if(u && p) push(ref(db, 'users'), { username: u, pin: p }); alert("User Disimpan!"); };
-        window.renderUserList = () => { onValue(ref(db, 'users'), (s) => { let h = ""; if(s.val()) Object.entries(s.val()).forEach(([k, v]) => h += `<tr><td class="p-4">${v.username}</td><td class="p-4 text-right">AKTIF</td></tr>`); document.getElementById('user-list-box').innerHTML = h; }); };
-
-        window.showTab = (id, btn) => {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            document.getElementById(id).classList.remove('hidden');
-            if(btn) btn.classList.add('active-tab');
-            if(id === 'tab-hutang') renderHutang();
-            if(id === 'tab-users') renderUserList();
-            if(id === 'tab-laporan') filterLaporan('harian');
-            if(id === 'tab-riwayat') renderRiwayat();
+        window.prosesBayarHutang = (sumber) => {
+            const audit = JSON.parse(localStorage.getItem('b_audit'));
+            const debts = JSON.parse(localStorage.getItem('b_debts_local'));
+            const nominal = debts[currentDebtKey].sisa;
+            
+            if(sumber === 'tunai') audit.cash += nominal;
+            else audit[sumber] += nominal;
+            
+            debts.splice(currentDebtKey, 1);
+            localStorage.setItem('b_audit', JSON.stringify(audit));
+            localStorage.setItem('b_debts_local', JSON.stringify(debts));
+            
+            alert("Lunas!");
+            location.reload();
         };
 
         window.renderRiwayat = () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `<div class="p-3 rounded-xl border flex justify-between items-center ${t.isSynced ? 'status-synced':'status-pending'}"><div><b>${t.type}</b><p class="uppercase">${t.name}</p></div><div class="text-right font-black">Rp ${fmt(t.nominal)}</div></div>`).join('');
+            document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `
+                <div class="p-3 rounded-xl border flex justify-between items-center ${t.isSynced ? 'status-synced':'status-pending'}">
+                    <div><b>${t.type}</b> <p class="uppercase text-[9px]">${t.name}</p></div>
+                    <div class="text-right font-black">Rp ${fmt(t.nominal)}</div>
+                </div>
+            `).join('');
             updateDashboard();
         };
 
@@ -347,25 +347,77 @@
             document.getElementById('mon-other').innerText = fmt(audit.other);
             document.getElementById('mon-total-modal').innerText = fmt(Object.values(audit).reduce((a,b)=>a+b, 0));
             document.getElementById('mon-total-laba-sesi').innerText = fmt(list.reduce((a,b)=>a+b.laba, 0));
-            onValue(ref(db, 'transactions'), (s) => { let t = 0; if(s.val()) Object.values(s.val()).forEach(v => t += v.laba); document.getElementById('mon-total-laba-all').innerText = fmt(t); }, {onlyOnce: true});
+            onValue(ref(db, 'transactions'), (s) => {
+                let t = 0; if(s.val()) Object.values(s.val()).forEach(v => t += v.laba);
+                document.getElementById('mon-total-laba-all').innerText = fmt(t);
+            });
         }
+
+        // Fungsi Filter Laporan
+        window.filterLaporan = (mode) => {
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            let grouped = {};
+            list.forEach(t => { 
+                let k = mode === 'harian' ? t.isoDate : t.isoDate.substring(0, 7); 
+                grouped[k] = (grouped[k] || 0) + t.laba; 
+            });
+            document.getElementById('report-list').innerHTML = Object.entries(grouped).map(([k,v]) => `
+                <div class="bg-white p-4 rounded-xl border flex justify-between font-bold">
+                    <span>${k}</span><span class="text-blue-700">Rp ${fmt(v)}</span>
+                </div>
+            `).join('');
+        };
+
+        window.showTab = (id, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+            document.getElementById(id).classList.remove('hidden');
+            if(btn) btn.classList.add('active-tab');
+            if(id === 'tab-hutang') renderHutang();
+            if(id === 'tab-riwayat') renderRiwayat();
+            if(id === 'tab-laporan') filterLaporan('harian');
+        };
 
         window.checkLogin = () => {
             const u = document.getElementById('user-input').value.toUpperCase();
             const p = document.getElementById('pin-input').value;
-            if(u === "ADMIN" && p === "0000") { sessionStorage.setItem('isLoggedIn', 'true'); sessionStorage.setItem('activeRole', 'admin'); location.reload(); }
-            else { onValue(ref(db, 'users'), (s) => { let ok = false; if(s.val()) Object.values(s.val()).forEach(v => { if(v.username === u && v.pin === p) ok = true; }); if(ok) { sessionStorage.setItem('isLoggedIn', 'true'); location.reload(); } else alert("PIN SALAH"); }, {onlyOnce: true}); }
+            if(u === "ADMIN" && p === "0000") {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('role', 'admin');
+                location.reload();
+            } else alert("Username/PIN Salah!");
         };
 
-        window.mulaiSesi = () => { const d = { cash: un(document.getElementById('s-cash').value), bri: un(document.getElementById('s-bri').value), dana: un(document.getElementById('s-dana').value), digipos: un(document.getElementById('s-digipos').value), other: un(document.getElementById('s-other').value) }; localStorage.setItem('b_audit', JSON.stringify(d)); location.reload(); };
+        window.mulaiSesi = () => {
+            const d = { 
+                cash: un(document.getElementById('s-cash').value), 
+                bri: un(document.getElementById('s-bri').value), 
+                dana: un(document.getElementById('s-dana').value), 
+                digipos: un(document.getElementById('s-digipos').value), 
+                other: un(document.getElementById('s-other').value) 
+            };
+            localStorage.setItem('b_audit', JSON.stringify(d)); 
+            location.reload();
+        };
+
         window.logout = () => { sessionStorage.clear(); location.reload(); };
-        window.akhiriSesi = () => { const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]'); if(list.some(t => !t.isSynced)) return alert("Upload data dulu!"); if(confirm("Tutup Sesi?")) { localStorage.clear(); location.reload(); } };
-        window.toggleFormInputs = () => { const type = document.getElementById('trx-type').value; document.getElementById('form-standar').classList.toggle('hidden', type === 'Pulsa/Kuota'); document.getElementById('form-pulsa').classList.toggle('hidden', type !== 'Pulsa/Kuota'); };
+        window.akhiriSesi = () => {
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            if(list.some(t => !t.isSynced)) return alert("Data belum diupload! Tekan tombol Upload.");
+            if(confirm("Tutup sesi?")) { localStorage.clear(); location.reload(); }
+        };
+
+        window.toggleFormInputs = () => {
+            const type = document.getElementById('trx-type').value;
+            document.getElementById('form-standar').classList.toggle('hidden', type === 'Pulsa/Kuota');
+            document.getElementById('form-pulsa').classList.toggle('hidden', type !== 'Pulsa/Kuota');
+        };
 
         window.onload = () => {
             if(sessionStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
+                if(sessionStorage.getItem('role') === 'admin') document.getElementById('admin-section').classList.remove('hidden');
                 if(localStorage.getItem('b_audit')) {
                     document.getElementById('btn-mulai').classList.add('hidden');
                     document.getElementById('msg-locked').classList.remove('hidden');
