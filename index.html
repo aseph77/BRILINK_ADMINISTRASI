@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Master v24.6 - Realtime Sync</title>
+    <title>Audit Master v24.7 - Firebase Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .active-tab { border-left: 4px solid #fbbf24; background-color: #1e3a8a; font-weight: bold; color: white; }
         .locked { opacity: 0.4; cursor: not-allowed !important; pointer-events: none; }
-        .status-pending { border-left: 5px solid #ef4444 !important; background-color: #fff1f2; }
-        .status-synced { border-left: 5px solid #22c55e !important; background-color: #f0fdf4; }
         .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .status-synced { border-left: 5px solid #22c55e; background-color: #f0fdf4; }
+        .status-pending { border-left: 5px solid #ef4444; background-color: #fff1f2; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-[12px] font-sans">
@@ -27,8 +27,8 @@
                     <p id="target-hutang-nom" class="text-3xl font-black text-red-600 italic"></p>
                 </div>
                 <div id="step-metode" class="grid grid-cols-2 gap-3">
-                    <button onclick="prosesBayarHutang('tunai')" class="bg-blue-600 text-white p-4 rounded-2xl font-black uppercase">💰 Tunai</button>
-                    <button onclick="showStepSaldo()" class="bg-orange-500 text-white p-4 rounded-2xl font-black uppercase">💳 Saldo</button>
+                    <button onclick="prosesBayarHutang('tunai')" class="bg-blue-600 text-white p-4 rounded-2xl font-black">💰 TUNAI</button>
+                    <button onclick="showStepSaldo()" class="bg-orange-500 text-white p-4 rounded-2xl font-black">💳 SALDO</button>
                 </div>
                 <div id="step-saldo" class="hidden grid grid-cols-2 gap-2">
                     <button onclick="prosesBayarHutang('bri')" class="bg-gray-100 p-3 rounded-xl font-bold border-2">BRI</button>
@@ -41,13 +41,13 @@
         </div>
     </div>
 
-    <div id="login-screen" class="fixed inset-0 z-[500] flex items-center justify-center bg-blue-900 p-6">
+    <div id="login-screen" class="fixed inset-0 z-[500] flex items-center justify-center bg-blue-950 p-6">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center border-t-8 border-yellow-400">
-            <h2 class="text-2xl font-black text-blue-900 mb-6 uppercase">Audit Master Login</h2>
+            <h2 class="text-2xl font-black text-blue-900 mb-6 uppercase italic">Audit Master Login</h2>
             <div class="space-y-4">
                 <input type="text" id="user-input" class="w-full p-3 border-2 rounded-xl font-bold uppercase text-center" placeholder="USERNAME">
                 <input type="password" id="pin-input" maxlength="4" class="w-full text-center text-2xl p-3 border-2 rounded-xl font-black" placeholder="PIN">
-                <button onclick="checkLogin()" class="w-full bg-blue-700 text-white font-black py-4 rounded-2xl uppercase">Masuk</button>
+                <button onclick="checkLogin()" class="w-full bg-blue-700 text-white font-black py-4 rounded-2xl uppercase shadow-lg">Masuk Sistem</button>
             </div>
         </div>
     </div>
@@ -56,22 +56,21 @@
         <nav class="bg-blue-900 text-white sticky top-0 z-50 shadow-xl">
             <div class="container mx-auto p-2 flex justify-between items-center">
                 <div class="flex flex-col">
-                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.6</h1>
-                    <span id="sync-status" class="text-[9px] font-mono opacity-70 italic">STATUS: MANUAL SYNC</span>
+                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.7</h1>
+                    <span id="sync-status" class="text-[9px] font-mono opacity-70 italic font-bold">FIREBASE: CONNECTED</span>
                 </div>
                 <div class="flex gap-2">
-                    <button id="btn-sync-manual" onclick="uploadOfflineData()" class="bg-orange-500 text-[10px] px-4 py-2 rounded-lg font-black">🔄 UPLOAD DATA</button>
-                    <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 OUT</button>
+                    <button onclick="uploadOfflineData()" class="bg-orange-500 text-[10px] px-4 py-2 rounded-lg font-black shadow-lg">🔄 SYNC DATA</button>
+                    <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 KELUAR</button>
                 </div>
             </div>
-            
             <div class="bg-blue-950 p-2 grid grid-cols-4 md:grid-cols-8 gap-1 text-center text-[8px] font-bold uppercase italic border-t border-blue-800">
                 <div class="bg-blue-900/50 p-1 rounded">Laci: <span id="mon-cash" class="block text-yellow-400 text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded">BRI: <span id="mon-bri" class="block text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded">DANA: <span id="mon-dana" class="block text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded">Digipos: <span id="mon-digipos" class="block text-[10px]">0</span></div>
                 <div class="bg-blue-900/50 p-1 rounded">Lain: <span id="mon-other" class="block text-[10px]">0</span></div>
-                <div class="bg-indigo-700 p-1 rounded text-white">Total Modal: <span id="mon-total-modal" class="block text-[10px]">0</span></div>
+                <div class="bg-indigo-700 p-1 rounded text-white">Total: <span id="mon-total-modal" class="block text-[10px]">0</span></div>
                 <div class="bg-emerald-700 p-1 rounded text-white">Laba Sesi: <span id="mon-total-laba-sesi" class="block text-[10px]">0</span></div>
                 <div class="bg-blue-600 p-1 rounded text-white">Laba Total: <span id="mon-total-laba-all" class="block text-[10px]">0</span></div>
             </div>
@@ -83,10 +82,10 @@
                     <button onclick="showTab('tab-rekonsiliasi', this)" class="tab-btn w-full text-left p-3 rounded-lg active-tab uppercase">🏠 Saldo Awal</button>
                     <button id="nav-trx" onclick="showTab('tab-transaksi', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">💸 Transaksi Baru</button>
                     <button id="nav-debt" onclick="showTab('tab-hutang', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase text-red-600">📔 Daftar Utang</button>
-                    <button id="nav-history" onclick="showTab('tab-riwayat', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">🕒 Riwayat & Sync</button>
+                    <button id="nav-history" onclick="showTab('tab-riwayat', this)" class="tab-btn locked w-full text-left p-3 rounded-lg uppercase">🕒 Riwayat</button>
                     <div id="admin-section" class="hidden border-t mt-2 pt-2 space-y-1">
-                        <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-3 rounded-lg text-green-600 uppercase">📊 Laporan Bertingkat</button>
-                        <button onclick="showTab('tab-users', this)" class="tab-btn w-full text-left p-3 rounded-lg text-blue-600 uppercase">👥 Kelola Akun</button>
+                        <button onclick="showTab('tab-laporan', this)" class="tab-btn w-full text-left p-3 rounded-lg text-green-600 uppercase">📊 Laporan</button>
+                        <button onclick="showTab('tab-users', this)" class="tab-btn w-full text-left p-3 rounded-lg text-blue-600 uppercase">👥 Kelola User</button>
                     </div>
                 </div>
                 <button onclick="akhiriSesi()" class="w-full p-4 rounded-xl font-black bg-red-700 text-white shadow-lg uppercase">🔒 Akhiri Sesi</button>
@@ -94,11 +93,11 @@
 
             <div class="lg:col-span-3">
                 <div id="tab-transaksi" class="tab-content hidden bg-white p-6 rounded-xl border shadow-sm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-4">
-                            <input type="text" id="trx-name" class="w-full p-3 border-2 rounded-xl font-bold uppercase" placeholder="NAMA PELANGGAN">
+                            <input type="text" id="trx-name" class="w-full p-3 border-2 rounded-xl font-bold uppercase" placeholder="Nama Pelanggan">
                             <div class="grid grid-cols-2 gap-2">
-                                <select id="trx-type" onchange="toggleFormInputs()" class="w-full p-3 border-2 rounded-xl font-black">
+                                <select id="trx-type" onchange="toggleForm()" class="w-full p-3 border-2 rounded-xl font-black">
                                     <option value="Transfer">Transfer</option>
                                     <option value="Tarik Tunai">Tarik Tunai</option>
                                     <option value="Pulsa/Kuota">Pulsa/Kuota</option>
@@ -110,17 +109,17 @@
                                     <option value="other">LAIN</option>
                                 </select>
                             </div>
-                            <select id="trx-metode-admin" class="w-full p-3 border-2 rounded-xl font-bold bg-yellow-50">
+                            <select id="trx-adm-metode" class="w-full p-3 border-2 rounded-xl font-bold bg-yellow-50">
                                 <option value="tunai">ADMIN TUNAI (MASUK LACI)</option>
                                 <option value="saldo">ADMIN POTONG SALDO</option>
                             </select>
                         </div>
                         <div class="space-y-4">
                             <div id="form-standar">
-                                <input type="text" oninput="formatCurrency(this)" id="trx-nominal" class="w-full p-3 border-2 rounded-xl text-2xl font-black" placeholder="NOMINAL">
+                                <input type="text" oninput="formatCurrency(this)" id="trx-nom" class="w-full p-3 border-2 rounded-xl text-2xl font-black" placeholder="NOMINAL">
                                 <div class="grid grid-cols-2 gap-2 mt-2">
-                                    <input type="text" oninput="formatCurrency(this)" id="trx-admin-u" class="p-3 border-2 rounded-xl font-bold text-green-600" placeholder="ADMIN USER">
-                                    <input type="text" oninput="formatCurrency(this)" id="trx-pot-bank" class="p-3 border-2 rounded-xl font-bold text-red-600" placeholder="POT. BANK">
+                                    <input type="text" oninput="formatCurrency(this)" id="trx-adm-u" class="p-3 border-2 rounded-xl font-bold text-green-600" placeholder="ADMIN USER">
+                                    <input type="text" oninput="formatCurrency(this)" id="trx-pot-b" class="p-3 border-2 rounded-xl font-bold text-red-600" placeholder="POT. BANK">
                                 </div>
                             </div>
                             <div id="form-pulsa" class="hidden grid grid-cols-2 gap-2">
@@ -128,56 +127,50 @@
                                 <input type="text" oninput="formatCurrency(this)" id="trx-jual" class="p-3 border-2 rounded-xl font-bold text-blue-600" placeholder="JUAL">
                             </div>
                             <div class="grid grid-cols-3 gap-2">
-                                <button onclick="simpanTransaksi('lunas')" class="bg-blue-700 text-white py-4 rounded-xl font-black uppercase text-[10px]">Lunas</button>
-                                <button onclick="simpanTransaksi('hutang')" class="bg-red-600 text-white py-4 rounded-xl font-black uppercase text-[10px]">Hutang</button>
-                                <button onclick="simpanTransaksi('sebagian')" class="bg-orange-500 text-white py-4 rounded-xl font-black uppercase text-[10px]">Sebagian</button>
+                                <button onclick="saveTrx('lunas')" class="bg-blue-700 text-white py-4 rounded-xl font-black text-[10px] uppercase">Lunas</button>
+                                <button onclick="saveTrx('hutang')" class="bg-red-600 text-white py-4 rounded-xl font-black text-[10px] uppercase">Hutang</button>
+                                <button onclick="saveTrx('sebagian')" class="bg-orange-500 text-white py-4 rounded-xl font-black text-[10px] uppercase">Sebagian</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="tab-hutang" class="tab-content hidden space-y-3">
-                    <div id="list-hutang-box" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-                </div>
+                <div id="tab-hutang" class="tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-3"></div>
 
                 <div id="tab-riwayat" class="tab-content hidden space-y-2"></div>
 
                 <div id="tab-laporan" class="tab-content hidden space-y-4">
-                    <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
-                        <div class="flex gap-2">
-                            <button onclick="filterLaporan('harian')" class="bg-blue-900 text-white px-4 py-2 rounded-lg font-bold">HARIAN</button>
-                            <button onclick="filterLaporan('bulanan')" class="bg-gray-200 px-4 py-2 rounded-lg font-bold">BULANAN</button>
-                        </div>
-                        <button onclick="exportLaporanExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-black uppercase italic">📊 EXCEL</button>
+                    <div class="bg-white p-4 rounded-xl border flex justify-between">
+                        <button onclick="exportExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-black uppercase">📊 Download Excel</button>
                     </div>
-                    <div id="report-list" class="space-y-2"></div>
+                    <div id="report-box" class="space-y-2"></div>
                 </div>
 
                 <div id="tab-users" class="tab-content hidden space-y-4">
-                    <div class="bg-white p-5 rounded-xl border flex gap-2">
-                        <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold flex-1" placeholder="USERNAME">
-                        <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl w-24 text-center font-black" placeholder="PIN">
-                        <button onclick="addUser()" class="bg-blue-700 text-white px-6 rounded-xl font-black">SAVE</button>
+                    <div class="bg-white p-5 rounded-xl border flex gap-2 shadow-sm">
+                        <input type="text" id="new-u" class="p-3 border-2 rounded-xl uppercase font-bold flex-1" placeholder="USERNAME BARU">
+                        <input type="password" id="new-p" maxlength="4" class="p-3 border-2 rounded-xl w-32 text-center font-black" placeholder="PIN">
+                        <button onclick="addNewUser()" class="bg-blue-700 text-white px-8 rounded-xl font-black">SIMPAN</button>
                     </div>
                     <div class="bg-white rounded-xl border overflow-hidden">
                         <table class="w-full text-left font-bold uppercase">
-                            <thead class="bg-blue-900 text-white"><tr><th class="p-4">User</th><th class="p-4 text-right">Aksi</th></tr></thead>
+                            <thead class="bg-blue-900 text-white italic"><tr><th class="p-4">User</th><th class="p-4 text-right">Status</th></tr></thead>
                             <tbody id="user-list-box" class="divide-y"></tbody>
                         </table>
                     </div>
                 </div>
 
                 <div id="tab-rekonsiliasi" class="tab-content bg-white p-5 rounded-xl border shadow-sm">
-                    <h2 class="font-black text-center mb-4 text-gray-700 uppercase italic">Input Saldo Awal Sesi</h2>
+                    <h2 class="font-black text-center mb-4 text-gray-700 uppercase italic underline">Pengaturan Saldo Awal</h2>
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <input type="text" oninput="formatCurrency(this)" id="s-cash" class="p-3 border-2 rounded-xl font-black" placeholder="LACI">
-                        <input type="text" oninput="formatCurrency(this)" id="s-bri" class="p-3 border-2 rounded-xl font-black" placeholder="BRI">
-                        <input type="text" oninput="formatCurrency(this)" id="s-dana" class="p-3 border-2 rounded-xl font-black" placeholder="DANA">
-                        <input type="text" oninput="formatCurrency(this)" id="s-digipos" class="p-3 border-2 rounded-xl font-black" placeholder="DIGIPOS">
-                        <input type="text" oninput="formatCurrency(this)" id="s-other" class="p-3 border-2 rounded-xl font-black" placeholder="LAIN">
+                        <input type="text" oninput="formatCurrency(this)" id="s-cash" class="p-3 border-2 rounded-xl font-black text-center" placeholder="LACI">
+                        <input type="text" oninput="formatCurrency(this)" id="s-bri" class="p-3 border-2 rounded-xl font-black text-center" placeholder="BRI">
+                        <input type="text" oninput="formatCurrency(this)" id="s-dana" class="p-3 border-2 rounded-xl font-black text-center" placeholder="DANA">
+                        <input type="text" oninput="formatCurrency(this)" id="s-digipos" class="p-3 border-2 rounded-xl font-black text-center" placeholder="DIGIPOS">
+                        <input type="text" oninput="formatCurrency(this)" id="s-other" class="p-3 border-2 rounded-xl font-black text-center" placeholder="LAIN">
                     </div>
-                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full mt-4 bg-blue-700 text-white p-4 rounded-xl font-black uppercase italic">Buka Sesi Transaksi</button>
-                    <div id="msg-locked" class="hidden p-4 bg-green-50 text-green-700 text-center font-black mt-4 rounded-xl">🔐 SESI SEDANG BERJALAN</div>
+                    <button id="btn-mulai" onclick="mulaiSesi()" class="w-full mt-4 bg-blue-700 text-white p-4 rounded-xl font-black uppercase italic shadow-lg">Aktifkan Sesi Transaksi</button>
+                    <div id="msg-locked" class="hidden p-4 bg-green-50 text-green-700 text-center font-black mt-4 rounded-xl">SESI AKTIF - MONITORING ON</div>
                 </div>
             </div>
         </div>
@@ -201,135 +194,114 @@
         const db = getDatabase(app);
         const un = (s) => s ? parseInt(s.toString().replace(/\./g, '')) || 0 : 0;
         const fmt = (v) => new Intl.NumberFormat('id-ID').format(v || 0);
-        let currentDebtKey = null;
+        let selectedDebtKey = null;
 
+        // --- GLOBAL EXPOSURE ---
         window.formatCurrency = (i) => { let v = i.value.replace(/[^0-9]/g, ""); i.value = v ? fmt(v) : ""; };
         window.showStepSaldo = () => { document.getElementById('step-metode').classList.add('hidden'); document.getElementById('step-saldo').classList.remove('hidden'); };
         window.closeModalHutang = () => { document.getElementById('modal-pelunasan').classList.add('hidden'); };
 
-        // --- REALTIME UPLOAD TANPA LOADING ---
-        window.uploadOfflineData = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            const debts = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
-            
-            // Upload Transaksi
-            list.forEach((t, index) => {
-                if(!t.isSynced) {
-                    push(ref(db, 'transactions'), { ...t, isSynced: true })
-                        .then(() => {
-                            list[index].isSynced = true;
-                            localStorage.setItem('b_trx_local', JSON.stringify(list));
-                            renderRiwayat();
-                        });
-                }
-            });
-
-            // Upload Utang
-            debts.forEach((d, index) => {
-                if(!d.isSynced) {
-                    push(ref(db, 'debts'), { ...d, isSynced: true })
-                        .then(() => {
-                            debts[index].isSynced = true;
-                            localStorage.setItem('b_debts_local', JSON.stringify(debts));
-                        });
-                }
-            });
-
-            alert("Proses Sinkronisasi Berjalan di Background...");
-        };
-
-        window.simpanTransaksi = (status) => {
+        // --- CORE FUNCTIONS ---
+        window.saveTrx = (status) => {
             const type = document.getElementById('trx-type').value;
             const name = document.getElementById('trx-name').value.toUpperCase() || "UMUM";
             const sk = document.getElementById('trx-sumber').value;
-            const mAdm = document.getElementById('trx-metode-admin').value;
-            let nom = 0, laba = 0, admU = un(document.getElementById('trx-admin-u').value);
-
+            const admM = document.getElementById('trx-adm-metode').value;
+            
+            let nom = 0, laba = 0, admU = un(document.getElementById('trx-adm-u').value);
             if(type === 'Pulsa/Kuota') {
-                const modal = un(document.getElementById('trx-modal').value);
-                nom = un(document.getElementById('trx-jual').value); laba = nom - modal;
+                const mod = un(document.getElementById('trx-modal').value);
+                nom = un(document.getElementById('trx-jual').value); laba = nom - mod;
             } else {
-                nom = un(document.getElementById('trx-nominal').value);
-                laba = admU - un(document.getElementById('trx-pot-bank').value);
+                nom = un(document.getElementById('trx-nom').value);
+                laba = admU - un(document.getElementById('trx-pot-b').value);
             }
 
-            if(nom <= 0) return alert("Nominal Kosong!");
+            if(nom <= 0) return alert("Nominal 0!");
             let audit = JSON.parse(localStorage.getItem('b_audit'));
             let hVal = 0;
 
-            if(status === 'hutang') hVal = nom + (type==='Pulsa/Kuota' ? 0 : admU);
+            if(status === 'hutang') hVal = nom + (type==='Pulsa/Kuota'?0:admU);
             else if(status === 'sebagian') {
                 const bayar = un(prompt("Bayar Tunai Sekarang:"));
-                hVal = (nom + (type==='Pulsa/Kuota' ? 0 : admU)) - bayar;
+                hVal = (nom + (type==='Pulsa/Kuota'?0:admU)) - bayar;
                 audit.cash += bayar;
             }
 
-            // Hitung Saldo
+            // Update Saldo Audit
             if(type === "Tarik Tunai") { audit[sk] += nom; audit.cash -= nom; }
             else {
                 audit[sk] -= nom;
                 if(status === 'lunas') {
-                    if(mAdm === 'tunai') audit.cash += (nom + (type==='Pulsa/Kuota' ? 0 : admU));
-                    else audit[sk] -= (type==='Pulsa/Kuota' ? 0 : admU);
+                    if(admM === 'tunai') audit.cash += (nom + (type==='Pulsa/Kuota'?0:admU));
+                    else audit[sk] -= (type==='Pulsa/Kuota'?0:admU);
                 }
-                if(type === 'Transfer') audit[sk] -= un(document.getElementById('trx-pot-bank').value);
+                if(type === 'Transfer') audit[sk] -= un(document.getElementById('trx-pot-b').value);
             }
 
-            // Simpan Utang Lokal & Siapkan ke Cloud
-            if(hVal > 0) {
-                const dList = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
-                dList.push({ id: Date.now(), name, sisa: hVal, isSynced: false });
-                localStorage.setItem('b_debts_local', JSON.stringify(dList));
-            }
+            // Simpan Ke Firebase (Realtime)
+            const trxData = { id: Date.now(), date: new Date().toLocaleDateString(), type, name, nominal: nom, laba, status };
+            push(ref(db, 'transactions'), trxData);
+            
+            if(hVal > 0) push(ref(db, 'debts'), { name, sisa: hVal, date: new Date().toLocaleDateString() });
 
-            const trx = { id: Date.now(), isoDate: new Date().toISOString().split('T')[0], type, name, nominal: nom, laba, isSynced: false };
+            // Simpan Lokal
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            list.push(trx);
+            list.push({...trxData, isSynced: true});
             localStorage.setItem('b_trx_local', JSON.stringify(list));
             localStorage.setItem('b_audit', JSON.stringify(audit));
             location.reload();
         };
 
         window.renderHutang = () => {
-            const local = JSON.parse(localStorage.getItem('b_debts_local') || '[]');
-            let html = "";
-            local.forEach((v, idx) => {
-                html += `
-                <div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow-sm flex justify-between items-center">
-                    <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
-                    <button onclick="openDebtModal('${idx}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
-                </div>`;
+            onValue(ref(db, 'debts'), (s) => {
+                let h = "";
+                if(s.exists()){
+                    Object.entries(s.val()).forEach(([key, val]) => {
+                        h += `
+                        <div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow-sm flex justify-between items-center">
+                            <div><p class="text-[9px] font-bold text-gray-400">${val.date}</p><h4 class="font-black">${val.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(val.sisa)}</p></div>
+                            <button onclick="openDebtModal('${key}', '${val.name}', ${val.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
+                        </div>`;
+                    });
+                }
+                document.getElementById('tab-hutang').innerHTML = h || '<p class="p-10 text-center col-span-2 opacity-30 font-black">TIDAK ADA UTANG</p>';
             });
-            document.getElementById('list-hutang-box').innerHTML = html || '<p class="text-center w-full opacity-30 font-bold p-10">KOSONG</p>';
         };
 
-        window.openDebtModal = (idx, n, s) => {
-            currentDebtKey = idx;
-            document.getElementById('target-hutang-nama').innerText = n;
-            document.getElementById('target-hutang-nom').innerText = fmt(s);
+        window.openDebtModal = (key, name, sisa) => {
+            selectedDebtKey = key;
+            document.getElementById('target-hutang-nama').innerText = name;
+            document.getElementById('target-hutang-nom').innerText = "Rp " + fmt(sisa);
             document.getElementById('modal-pelunasan').classList.remove('hidden');
         };
 
         window.prosesBayarHutang = (sumber) => {
-            const audit = JSON.parse(localStorage.getItem('b_audit'));
-            const debts = JSON.parse(localStorage.getItem('b_debts_local'));
-            const nominal = debts[currentDebtKey].sisa;
+            const nom = un(document.getElementById('target-hutang-nom').innerText);
+            let audit = JSON.parse(localStorage.getItem('b_audit'));
+            if(sumber === 'tunai') audit.cash += nom; else audit[sumber] += nom;
             
-            if(sumber === 'tunai') audit.cash += nominal;
-            else audit[sumber] += nominal;
-            
-            debts.splice(currentDebtKey, 1);
             localStorage.setItem('b_audit', JSON.stringify(audit));
-            localStorage.setItem('b_debts_local', JSON.stringify(debts));
-            
-            alert("Lunas!");
-            location.reload();
+            remove(ref(db, 'debts/' + selectedDebtKey)).then(() => {
+                alert("Berhasil!"); location.reload();
+            });
+        };
+
+        window.showTab = (id, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+            document.getElementById(id).classList.remove('hidden');
+            if(btn) btn.classList.add('active-tab');
+            if(id === 'tab-hutang') renderHutang();
+            if(id === 'tab-riwayat') renderRiwayat();
+            if(id === 'tab-users') renderUserList();
+            if(id === 'tab-laporan') renderLaporan();
         };
 
         window.renderRiwayat = () => {
             const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
             document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `
-                <div class="p-3 rounded-xl border flex justify-between items-center ${t.isSynced ? 'status-synced':'status-pending'}">
+                <div class="p-3 rounded-xl border flex justify-between items-center bg-white shadow-sm border-l-4 border-blue-900">
                     <div><b>${t.type}</b> <p class="uppercase text-[9px]">${t.name}</p></div>
                     <div class="text-right font-black">Rp ${fmt(t.nominal)}</div>
                 </div>
@@ -348,35 +320,10 @@
             document.getElementById('mon-total-modal').innerText = fmt(Object.values(audit).reduce((a,b)=>a+b, 0));
             document.getElementById('mon-total-laba-sesi').innerText = fmt(list.reduce((a,b)=>a+b.laba, 0));
             onValue(ref(db, 'transactions'), (s) => {
-                let t = 0; if(s.val()) Object.values(s.val()).forEach(v => t += v.laba);
+                let t = 0; if(s.exists()) Object.values(s.val()).forEach(v => t += v.laba);
                 document.getElementById('mon-total-laba-all').innerText = fmt(t);
             });
         }
-
-        // Fungsi Filter Laporan
-        window.filterLaporan = (mode) => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            let grouped = {};
-            list.forEach(t => { 
-                let k = mode === 'harian' ? t.isoDate : t.isoDate.substring(0, 7); 
-                grouped[k] = (grouped[k] || 0) + t.laba; 
-            });
-            document.getElementById('report-list').innerHTML = Object.entries(grouped).map(([k,v]) => `
-                <div class="bg-white p-4 rounded-xl border flex justify-between font-bold">
-                    <span>${k}</span><span class="text-blue-700">Rp ${fmt(v)}</span>
-                </div>
-            `).join('');
-        };
-
-        window.showTab = (id, btn) => {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            document.getElementById(id).classList.remove('hidden');
-            if(btn) btn.classList.add('active-tab');
-            if(id === 'tab-hutang') renderHutang();
-            if(id === 'tab-riwayat') renderRiwayat();
-            if(id === 'tab-laporan') filterLaporan('harian');
-        };
 
         window.checkLogin = () => {
             const u = document.getElementById('user-input').value.toUpperCase();
@@ -385,33 +332,55 @@
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('role', 'admin');
                 location.reload();
-            } else alert("Username/PIN Salah!");
+            } else {
+                onValue(ref(db, 'users'), (s) => {
+                    let auth = false;
+                    if(s.exists()) Object.values(s.val()).forEach(v => { if(v.username === u && v.pin === p) auth = true; });
+                    if(auth) { sessionStorage.setItem('isLoggedIn', 'true'); location.reload(); }
+                    else alert("AKSES DITOLAK!");
+                }, {onlyOnce: true});
+            }
+        };
+
+        window.addNewUser = () => {
+            const u = document.getElementById('new-u').value.toUpperCase();
+            const p = document.getElementById('new-p').value;
+            if(u && p) push(ref(db, 'users'), { username: u, pin: p });
+            alert("User Ditambahkan!");
+        };
+
+        window.renderUserList = () => {
+            onValue(ref(db, 'users'), (s) => {
+                let h = "";
+                if(s.exists()) Object.values(s.val()).forEach(v => h += `<tr><td class="p-4">${v.username}</td><td class="p-4 text-right text-green-600">AKTIF</td></tr>`);
+                document.getElementById('user-list-box').innerHTML = h;
+            });
+        };
+
+        window.renderLaporan = () => {
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            document.getElementById('report-box').innerHTML = list.map(t => `
+                <div class="bg-white p-3 border rounded-lg flex justify-between font-bold">
+                    <span>${t.date} - ${t.name}</span><span class="text-blue-700">Rp ${fmt(t.laba)}</span>
+                </div>
+            `).join('');
+        };
+
+        window.exportExcel = () => {
+            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
+            const ws = XLSX.utils.json_to_sheet(list);
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Audit");
+            XLSX.writeFile(wb, "Laporan_Audit_v24.xlsx");
         };
 
         window.mulaiSesi = () => {
-            const d = { 
-                cash: un(document.getElementById('s-cash').value), 
-                bri: un(document.getElementById('s-bri').value), 
-                dana: un(document.getElementById('s-dana').value), 
-                digipos: un(document.getElementById('s-digipos').value), 
-                other: un(document.getElementById('s-other').value) 
-            };
-            localStorage.setItem('b_audit', JSON.stringify(d)); 
-            location.reload();
+            const d = { cash: un(document.getElementById('s-cash').value), bri: un(document.getElementById('s-bri').value), dana: un(document.getElementById('s-dana').value), digipos: un(document.getElementById('s-digipos').value), other: un(document.getElementById('s-other').value) };
+            localStorage.setItem('b_audit', JSON.stringify(d)); location.reload();
         };
 
         window.logout = () => { sessionStorage.clear(); location.reload(); };
-        window.akhiriSesi = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            if(list.some(t => !t.isSynced)) return alert("Data belum diupload! Tekan tombol Upload.");
-            if(confirm("Tutup sesi?")) { localStorage.clear(); location.reload(); }
-        };
-
-        window.toggleFormInputs = () => {
-            const type = document.getElementById('trx-type').value;
-            document.getElementById('form-standar').classList.toggle('hidden', type === 'Pulsa/Kuota');
-            document.getElementById('form-pulsa').classList.toggle('hidden', type !== 'Pulsa/Kuota');
-        };
+        window.akhiriSesi = () => { if(confirm("Tutup Sesi? Semua data lokal akan dibersihkan.")) { localStorage.clear(); location.reload(); } };
+        window.toggleForm = () => { const t = document.getElementById('trx-type').value; document.getElementById('form-standar').classList.toggle('hidden', t === 'Pulsa/Kuota'); document.getElementById('form-pulsa').classList.toggle('hidden', t !== 'Pulsa/Kuota'); };
 
         window.onload = () => {
             if(sessionStorage.getItem('isLoggedIn') === 'true') {
