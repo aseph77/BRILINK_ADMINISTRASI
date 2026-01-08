@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Master v24.9 - Full Fix</title>
+    <title>Audit Master v25.0 - Final Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -51,10 +51,7 @@
     <div id="main-app" class="hidden">
         <nav class="bg-blue-900 text-white sticky top-0 z-50 shadow-xl">
             <div class="container mx-auto p-2 flex justify-between items-center">
-                <div class="flex flex-col">
-                    <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v24.9</h1>
-                    <span class="text-[9px] font-mono opacity-70 italic font-bold">MODE: REALTIME DB</span>
-                </div>
+                <h1 class="font-black text-yellow-400 italic text-lg uppercase">Audit Master v25.0</h1>
                 <button onclick="logout()" class="bg-red-600 text-[10px] px-3 py-1.5 rounded-lg font-black uppercase">🚪 Out</button>
             </div>
             <div class="bg-blue-950 p-2 grid grid-cols-4 md:grid-cols-8 gap-1 text-center text-[8px] font-bold uppercase italic border-t border-blue-800">
@@ -86,7 +83,7 @@
 
             <div class="lg:col-span-3">
                 <div id="tab-transaksi" class="tab-content hidden bg-white p-6 rounded-xl border">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-4">
                             <input type="text" id="trx-name" class="w-full p-3 border-2 rounded-xl font-bold uppercase" placeholder="NAMA PELANGGAN">
                             <div class="grid grid-cols-2 gap-2">
@@ -134,18 +131,15 @@
                             <option value="pegawai">PEGAWAI</option>
                             <option value="admin">ADMIN</option>
                         </select>
-                        <button id="btn-save-user" class="bg-blue-700 text-white rounded-xl font-black">SIMPAN USER</button>
+                        <button id="btn-save-user" class="bg-blue-700 text-white rounded-xl font-black">SIMPAN</button>
                     </div>
                     <div class="bg-white rounded-xl border overflow-hidden">
-                        <table class="w-full text-left font-bold uppercase"><thead class="bg-blue-900 text-white"><tr><th class="p-4">User</th><th class="p-4">Role</th><th class="p-4 text-right">Aksi</th></tr></thead><tbody id="user-list-box" class="divide-y"></tbody></table>
+                        <table class="w-full text-left uppercase"><thead class="bg-blue-900 text-white"><tr><th class="p-4">User</th><th class="p-4">Role</th><th class="p-4 text-right">Aksi</th></tr></thead><tbody id="user-list-box" class="divide-y font-bold"></tbody></table>
                     </div>
                 </div>
 
                 <div id="tab-laporan" class="tab-content hidden space-y-4">
-                    <div class="bg-white p-4 rounded-xl border flex justify-between gap-2">
-                        <button onclick="exportExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-black uppercase">📊 Excel</button>
-                        <button onclick="resetAllData()" class="bg-red-600 text-white px-6 py-2 rounded-lg font-black uppercase shadow-lg">⚠️ Hapus Semua Data</button>
-                    </div>
+                    <button onclick="resetAllData()" class="w-full bg-red-600 text-white p-4 rounded-xl font-black uppercase shadow-lg">⚠️ Reset Database (Hapus Semua)</button>
                     <div id="report-box" class="space-y-2"></div>
                 </div>
 
@@ -161,7 +155,7 @@
                         <input type="text" oninput="formatCurrency(this)" id="s-other" class="p-3 border-2 rounded-xl font-black text-center" placeholder="LAIN">
                     </div>
                     <button id="btn-mulai" onclick="mulaiSesi()" class="w-full mt-4 bg-blue-700 text-white p-4 rounded-xl font-black uppercase italic shadow-lg">BUKA SESI BARU</button>
-                    <div id="msg-locked" class="hidden p-4 bg-green-50 text-green-700 text-center font-black mt-4 rounded-xl italic">🔐 SESI SEDANG BERJALAN</div>
+                    <div id="msg-locked" class="hidden p-4 bg-green-50 text-green-700 text-center font-black mt-4 rounded-xl italic font-bold">🔐 SESI AKTIF</div>
                 </div>
             </div>
         </div>
@@ -252,17 +246,24 @@
         window.renderHutang = () => {
             onValue(ref(db, 'debts'), (s) => {
                 let h = "";
-                if(s.exists()) Object.entries(s.val()).forEach(([k, v]) => {
-                    h += `<div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow flex justify-between items-center">
-                        <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
-                        <button onclick="openDebtModal('${k}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
-                    </div>`;
-                });
-                document.getElementById('tab-hutang').innerHTML = h || '<div class="col-span-2 text-center p-10 opacity-30 font-bold italic text-lg">BELUM ADA UTANG</div>';
+                if(s.exists()) {
+                    Object.entries(s.val()).forEach(([k, v]) => {
+                        h += `<div class="bg-white p-4 rounded-2xl border-l-8 border-red-600 shadow flex justify-between items-center">
+                            <div><h4 class="font-black uppercase">${v.name}</h4><p class="text-lg font-black text-red-600">Rp ${fmt(v.sisa)}</p></div>
+                            <button onclick="openDebtModal('${k}', '${v.name}', ${v.sisa})" class="bg-green-600 text-white px-4 py-2 rounded-xl font-black">LUNAS</button>
+                        </div>`;
+                    });
+                }
+                document.getElementById('tab-hutang').innerHTML = h || '<div class="col-span-2 text-center p-10 opacity-30 font-bold italic">UTANG KOSONG</div>';
             });
         };
 
-        window.openDebtModal = (k, n, s) => { selectedKey = k; document.getElementById('target-hutang-nama').innerText = n; document.getElementById('target-hutang-nom').innerText = fmt(s); document.getElementById('modal-pelunasan').classList.remove('hidden'); };
+        window.openDebtModal = (k, n, s) => { 
+            selectedKey = k; 
+            document.getElementById('target-hutang-nama').innerText = n; 
+            document.getElementById('target-hutang-nom').innerText = fmt(s); 
+            document.getElementById('modal-pelunasan').classList.remove('hidden'); 
+        };
 
         window.prosesBayarHutang = (sumber) => {
             const nom = un(document.getElementById('target-hutang-nom').innerText);
@@ -277,37 +278,27 @@
             const u = document.getElementById('new-u').value.toUpperCase();
             const p = document.getElementById('new-p').value;
             const r = document.getElementById('new-role').value;
-            if(u && p) push(ref(db, 'users'), { username: u, pin: p, role: r }).then(() => alert("User Ditambahkan!"));
+            if(u && p) push(ref(db, 'users'), { username: u, pin: p, role: r }).then(() => alert("User Saved!"));
         };
 
         window.renderUserList = () => {
             onValue(ref(db, 'users'), (s) => {
                 let h = "";
-                if(s.exists()) Object.entries(s.val()).forEach(([k,v]) => h += `<tr><td class="p-4">${v.username}</td><td class="p-4 font-bold text-blue-600 uppercase">${v.role}</td><td class="p-4 text-right"><button onclick="deleteUser('${k}')" class="text-red-600">Hapus</button></td></tr>`);
+                if(s.exists()) Object.entries(s.val()).forEach(([k,v]) => h += `<tr><td class="p-4">${v.username}</td><td class="p-4">${v.role}</td><td class="p-4 text-right"><button onclick="deleteUser('${k}')" class="text-red-600">Hapus</button></td></tr>`);
                 document.getElementById('user-list-box').innerHTML = h;
             });
         };
 
-        window.deleteUser = (k) => { if(confirm("Hapus user?")) remove(ref(db, 'users/' + k)); };
+        window.deleteUser = (k) => { if(confirm("Hapus?")) remove(ref(db, 'users/' + k)); };
+        window.resetAllData = () => { if(confirm("Hapus semua transaksi & utang?")) { remove(ref(db, 'transactions')); remove(ref(db, 'debts')); localStorage.clear(); location.reload(); }};
 
-        window.resetAllData = () => {
-            if(confirm("PERINGATAN! Semua data transaksi dan utang di Cloud & HP ini akan DIHAPUS PERMANEN. Lanjutkan?")) {
-                remove(ref(db, 'transactions'));
-                remove(ref(db, 'debts'));
-                localStorage.clear();
-                location.reload();
-            }
-        };
-
-        // --- TABS & DASHBOARD ---
+        // --- DASHBOARD & TABS ---
         window.showTab = (id, btn) => {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
             document.getElementById(id).classList.remove('hidden');
             if(btn) btn.classList.add('active-tab');
             if(id === 'tab-hutang') renderHutang();
-            if(id === 'tab-users') renderUserList();
-            if(id === 'tab-laporan') renderLaporan();
         };
 
         function updateDashboard() {
@@ -326,20 +317,6 @@
             document.getElementById('mon-total-laba-sesi').innerText = fmt(list.reduce((a,b)=>a+b.laba, 0));
         }
 
-        window.renderRiwayat = () => {
-            const list = JSON.parse(localStorage.getItem('b_trx_local') || '[]');
-            document.getElementById('tab-riwayat').innerHTML = list.slice().reverse().map(t => `<div class="p-3 bg-white rounded-xl border flex justify-between items-center shadow-sm border-l-4 border-blue-900"><div><b>${t.type}</b><p class="uppercase text-[10px]">${t.name}</p></div><div class="font-black">Rp ${fmt(t.nominal)}</div></div>`).join('');
-            updateDashboard();
-        };
-
-        window.renderLaporan = () => {
-            onValue(ref(db, 'transactions'), (s) => {
-                let h = "";
-                if(s.exists()) Object.values(s.val()).forEach(t => h += `<div class="bg-white p-3 border rounded-lg flex justify-between font-bold"><span>${t.date} - ${t.name}</span><span class="text-blue-700">Rp ${fmt(t.laba)}</span></div>`);
-                document.getElementById('report-box').innerHTML = h;
-            });
-        };
-
         window.mulaiSesi = () => {
             const d = { 
                 cash: un(document.getElementById('s-cash').value), 
@@ -351,25 +328,27 @@
             localStorage.setItem('b_audit', JSON.stringify(d)); location.reload();
         };
 
+        window.logout = () => { sessionStorage.clear(); location.reload(); };
+        window.akhiriSesi = () => { if(confirm("Tutup Sesi?")) { localStorage.clear(); location.reload(); } };
         window.toggleForm = () => { 
             const t = document.getElementById('trx-type').value; 
             document.getElementById('form-standar').classList.toggle('hidden', t === 'Pulsa/Kuota'); 
             document.getElementById('form-pulsa').classList.toggle('hidden', t !== 'Pulsa/Kuota'); 
         };
 
-        window.logout = () => { sessionStorage.clear(); location.reload(); };
-        window.akhiriSesi = () => { if(confirm("Tutup Sesi?")) { localStorage.clear(); location.reload(); } };
-
         window.onload = () => {
             if(sessionStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 if(sessionStorage.getItem('role') === 'admin') document.getElementById('admin-menu').classList.remove('hidden');
+                
                 if(localStorage.getItem('b_audit')) {
                     document.getElementById('btn-mulai').classList.add('hidden');
                     document.getElementById('msg-locked').classList.remove('hidden');
+                    // AKTIFKAN SEMUA TAB
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('locked'));
-                    renderRiwayat();
+                    updateDashboard();
+                    renderHutang();
                 }
             }
         };
